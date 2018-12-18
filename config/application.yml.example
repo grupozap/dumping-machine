@@ -1,0 +1,8 @@
+bootstrapServers: 127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094
+schemaRegistryUrl: 127.0.0.1:8081
+groupId: dumping-machine
+topics:
+- name: topic-1
+  bucketName: bucket-1
+  bucketRegion: us-east-1
+  partitionForget: 3000

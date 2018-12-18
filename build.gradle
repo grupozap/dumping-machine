@@ -1,0 +1,60 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'application'
+
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url 'http://packages.confluent.io/maven/' }
+    }
+}
+
+allprojects {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url "http://packages.confluent.io/maven/" }
+    }
+
+    dependencies {
+        compile group: 'org.yaml', name: 'snakeyaml', version: "${snakeyamlVersion}"
+        compile group: 'org.apache.kafka', name: 'kafka_2.12', version: "${kafkaVersion}"
+        compile group: 'org.apache.parquet', name: 'parquet-avro', version: "${parquetAvroVersion}"
+        compile group: 'org.apache.hadoop', name: 'hadoop-common', version: "${hadoopVersion}"
+        compile group: 'io.confluent', name: 'kafka-avro-serializer', version: "${avroVersion}"
+        compile group: 'com.google.code.gson', name: 'gson', version: "${gsonVersion}"
+        compile group: 'org.slf4j', name: 'slf4j-log4j12', version: "${slf4jVersion}"
+        compile group: 'com.amazonaws', name: 'aws-java-sdk', version: "${awsJavaSdkVerion}"
+    }
+
+    sourceSets {
+        integrationTest {
+            java {
+                compileClasspath += main.output + test.output
+                runtimeClasspath += main.output + test.output
+            }
+        }
+    }
+
+    application {
+        mainClassName = "com.grupozap.dumping_machine.Application"
+    }
+
+    tasks.withType(JavaExec) {
+        // Assign all Java system properties from
+        // the command line to the JavaExec task.
+        systemProperties System.properties
+    }
+    
+    jar {
+        manifest {
+            attributes(
+                    'Main-Class': 'com.grupozap.dumping_machine.Application'
+            )
+        }
+    }
+}
