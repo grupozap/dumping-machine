@@ -11,13 +11,13 @@ public class ApplicationProperties {
     private String bootstrapServer;
     private String schemaRegistryUrl;
     private String groupId;
-    private List<String> topics;
+    private List<TopicProperties> topics;
 
-    public List<String> getTopics() {
+    public List<TopicProperties> getTopics() {
         return topics;
     }
 
-    public void setTopics(List<String> topics) {
+    public void setTopics(List<TopicProperties> topics) {
         this.topics = topics;
     }
 

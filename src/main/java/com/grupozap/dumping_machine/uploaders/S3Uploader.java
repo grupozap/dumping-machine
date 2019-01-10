@@ -21,7 +21,7 @@ public class S3Uploader {
                 .build();
     }
 
-    public void upload(String filename) {
-        this.s3Client.putObject(new PutObjectRequest(bucketName, filename, new File(filename)));
+    public void upload(String remotePath, String filename) {
+        this.s3Client.putObject(new PutObjectRequest(bucketName, remotePath, new File(filename)));
     }
 }

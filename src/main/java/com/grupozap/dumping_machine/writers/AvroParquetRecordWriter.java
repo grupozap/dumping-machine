@@ -13,10 +13,11 @@ import java.io.IOException;
 public class AvroParquetRecordWriter {
     private final long createdAt;
     private final String filename;
+    private final String path;
     private final ParquetWriter writer;
 
-    public AvroParquetRecordWriter(Schema schema, String filename, int blockSize, int pageSize) throws IOException {
-        this.writer = AvroParquetWriter.<GenericRecord>builder(new Path(filename))
+    public AvroParquetRecordWriter(Schema schema, String path, String filename, int blockSize, int pageSize) throws IOException {
+        this.writer = AvroParquetWriter.<GenericRecord>builder(new Path(path + filename))
                 .withSchema(schema)
                 .withCompressionCodec(CompressionCodecName.SNAPPY)
                 .withRowGroupSize(blockSize)
@@ -25,6 +26,7 @@ public class AvroParquetRecordWriter {
                 .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
                 .build();
         this.createdAt = System.currentTimeMillis();
+        this.path = path;
         this.filename = filename;
     }
 
@@ -50,7 +52,11 @@ public class AvroParquetRecordWriter {
         }
     }
 
-    public String getFilename() {
-        return filename;
+    public String getPath() {
+        return path;
+    }
+
+    public String getFilePath() {
+        return path + filename;
     }
 }
