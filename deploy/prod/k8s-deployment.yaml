@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dumping-machine
+  namespace: dataanalytics
+  labels:
+    app: dumping-machine
+    process: worker
+    product: dataanalytics
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 100%
+  template:
+    metadata:
+      labels:
+        app: dumping-machine
+        process: worker
+        product: dataanalytics
+        env: prod
+    spec:
+      containers:
+      - name: dumping-machine
+        image: vivareal/dumping-machine:0.0.1
+        imagePullPolicy: Always
+        env:
+        - name: JAVA_OPTS
+          value: -Xms256m -Xmx2048m -XX:MaxMetaspaceSize=512m
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              key: AWS_ACCESS_KEY_ID
+              name: brainwaves
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              key: AWS_SECRET_ACCESS_KEY
+              name: brainwaves
+        resources:
+          requests:
+            cpu: 512m
+            memory: 1Gi
+          limits:
+            cpu: 2048m
+            memory: 4Gi
+      terminationGracePeriodSeconds: 30
