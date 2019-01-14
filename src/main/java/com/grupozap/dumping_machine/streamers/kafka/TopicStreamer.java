@@ -1,31 +1,17 @@
 package com.grupozap.dumping_machine.streamers.kafka;
 
-import com.grupozap.dumping_machine.partitioners.TimeBasedPartitioner;
-import com.grupozap.dumping_machine.writers.AvroParquetRecordWriter;
-import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import com.grupozap.dumping_machine.partitioners.HourlyBasedPartitioner;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.clients.consumer.*;
 
 import java.util.*;
 
 public class TopicStreamer implements Runnable {
+    private final String topic;
+    private final long poolSize;
     private final String bootstrapServers;
     private final String groupId;
     private final String schemaRegistryUrl;
-    private final String topic;
-    private final String localPath;
-    private final String remotePath;
-    private final long poolSize;
-    private final long uploadMillis;
-    private AvroParquetRecordWriter avroParquetRecordWriter;
-    private TimeBasedPartitioner timeBasedPartitioner;
-    private KafkaConsumer consumer;
-
-
 
     public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, String topic) {
         this.bootstrapServers = bootstrapServers;
@@ -33,64 +19,45 @@ public class TopicStreamer implements Runnable {
         this.schemaRegistryUrl = schemaRegistryUrl;
         this.topic = topic;
         this.poolSize = 100;
-        this.uploadMillis = 10000;
-        this.avroParquetRecordWriter = null;
-        this.localPath = "/tmp/";
-        this.remotePath = "tmp/";
-
-        Properties props = new Properties();
-
-        props.put("bootstrap.servers", this.bootstrapServers);
-        props.put("group.id", this.groupId);
-        props.put("enable.auto.commit", "false");
-        props.put("schema.registry.url", this.schemaRegistryUrl);
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", KafkaAvroDeserializer.class);
-
-        this.consumer = new KafkaConsumer<String, GenericRecord>(props);
     }
 
     @Override
     public void run() {
-        boolean close = false;
+        ConsumerRecords<String, GenericRecord> records;
+        HourlyBasedPartitioner hourlyBasedPartitioner = new HourlyBasedPartitioner(this.topic);
+        KafkaConsumer consumer = getConsumer();
 
-        timeBasedPartitioner = new TimeBasedPartitioner(topic);
         consumer.subscribe(Arrays.asList(this.topic));
 
-        while (true) {
-            timeBasedPartitioner.closeOldPartitions();
+        try {
+            while (true) {
+                records = consumer.poll(this.poolSize);
 
-            if(close == true) { consumer.commitSync(); }
+                for (ConsumerRecord<String, GenericRecord> record : records) {
+                    if(record.value() != null) {
+                        hourlyBasedPartitioner.consume(record);
+                    }
+                }
 
-            ConsumerRecords<String, GenericRecord> records = consumer.poll(this.poolSize);
-
-            for (ConsumerRecord<String, GenericRecord> record : records) {
-                timeBasedPartitioner.write(record);
+                // Flush closed partitions
+                consumer.commitSync(hourlyBasedPartitioner.getClosedPartitions());
             }
+        } finally {
+            consumer.close();
         }
     }
 
-    private List<Long> offsets() {
-        List<Long> offsets = new ArrayList<>();
+    private KafkaConsumer<String, GenericRecord> getConsumer() {
+        Properties props = new Properties();
 
-        consumer.assignment().forEach( (topicPartition) -> {
-            OffsetAndMetadata commit = consumer.committed((TopicPartition) topicPartition);
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroDeserializer");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put("schema.registry.url", this.schemaRegistryUrl);
 
-            if(commit == null) {
-                offsets.add((long) 0);
-            } else {
-                offsets.add(commit.offset());
-            }
-        });
-
-        return offsets;
-    }
-
-    private List<Integer> partitions() {
-        List<Integer> partitions = new ArrayList<>();
-
-        consumer.assignment().forEach( (topicPartition) -> partitions.add(((TopicPartition) topicPartition).partition()) );
-
-        return partitions;
+        return new KafkaConsumer<>(props);
     }
 }

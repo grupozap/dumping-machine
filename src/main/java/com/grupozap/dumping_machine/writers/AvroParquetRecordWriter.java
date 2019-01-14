@@ -11,9 +11,6 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import java.io.IOException;
 
 public class AvroParquetRecordWriter {
-    private final long createdAt;
-    private final String filename;
-    private final String path;
     private final ParquetWriter writer;
 
     public AvroParquetRecordWriter(Schema schema, String path, String filename, int blockSize, int pageSize) throws IOException {
@@ -25,13 +22,6 @@ public class AvroParquetRecordWriter {
                 .withDictionaryEncoding(true)
                 .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
                 .build();
-        this.createdAt = System.currentTimeMillis();
-        this.path = path;
-        this.filename = filename;
-    }
-
-    public long getCreatedAt() {
-        return createdAt;
     }
 
     public void write(GenericRecord record) {
@@ -50,13 +40,5 @@ public class AvroParquetRecordWriter {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public String getFilePath() {
-        return path + filename;
     }
 }

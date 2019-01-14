@@ -8,7 +8,7 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "dumping-machine")
 public class ApplicationProperties {
-    private String bootstrapServer;
+    private String bootstrapServers;
     private String schemaRegistryUrl;
     private String groupId;
     private List<TopicProperties> topics;
@@ -21,12 +21,12 @@ public class ApplicationProperties {
         this.topics = topics;
     }
 
-    public String getBootstrapServer() {
-        return bootstrapServer;
+    public String getBootstrapServers() {
+        return bootstrapServers;
     }
 
-    public void setBootstrapServer(String bootstrapServer) {
-        this.bootstrapServer = bootstrapServer;
+    public void setBootstrapServers(String bootstrapServers) {
+        this.bootstrapServers = bootstrapServers;
     }
 
     public String getSchemaRegistryUrl() {
@@ -43,5 +43,17 @@ public class ApplicationProperties {
 
     public void setGroupId(String groupId) {
         this.groupId = groupId;
+    }
+
+    public static class TopicProperties {
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 }

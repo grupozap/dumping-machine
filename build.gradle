@@ -1,22 +1,21 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
-apply plugin: 'com.diffplug.gradle.spotless'
 
 buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
+        maven { url 'http://packages.confluent.io/maven/' }
     }
     dependencies {
-        classpath group: 'com.diffplug.spotless', name: 'spotless-plugin-gradle', version: "${spotlessVersion}"
         classpath group: 'org.springframework.boot', name: 'spring-boot-gradle-plugin', version: "${springBootVersion}"
     }
 }
 
 allprojects {
-    sourceCompatibility = JavaVersion.VERSION_1_10
-    targetCompatibility = JavaVersion.VERSION_1_10
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
     repositories {
         mavenLocal()
@@ -31,7 +30,7 @@ allprojects {
     dependencies {
         compile(group: 'org.springframework.boot', name: 'spring-boot-starter', version: "${springBootVersion}")
         compile group: 'org.apache.kafka', name: 'kafka_2.12', version: "${kafkaVersion}"
-        compile group: 'org.apache.kafka', name: 'kafka-streamers', version: "${kafkaVersion}"
+//        compile group: 'org.apache.kafka', name: 'kafka-streamers', version: "${kafkaVersion}"
         compile group: 'org.apache.parquet', name: 'parquet-avro', version: "${parquetAvroVersion}"
         compile group: 'org.apache.hadoop', name: 'hadoop-common', version: "${hadoopVersion}"
         compile group: 'io.confluent', name: 'kafka-avro-serializer', version: "${avroVersion}"
@@ -40,20 +39,6 @@ allprojects {
         compile group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.11.470'
 
         testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: "${springBootVersion}"
-    }
-
-    spotless {
-        java {
-            target '**/*.java'
-            googleJavaFormat('1.6')
-        }
-
-        format 'misc', {
-            target '**/*.gradle', '**/.gitignore', 'docs/*.md', 'feeds-*/*.md', '*.md'
-            trimTrailingWhitespace()
-            indentWithSpaces(2)
-            endWithNewline()
-        }
     }
 
     sourceSets {

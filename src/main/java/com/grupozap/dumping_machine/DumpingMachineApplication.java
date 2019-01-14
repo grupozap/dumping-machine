@@ -7,6 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DumpingMachineApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(DumpingMachineApplication.class, args);
+        try {
+            SpringApplication.run(DumpingMachineApplication.class, args);
+        } catch (Throwable e) {
+            System.out.println(e.getStackTrace());
+        }
     }
 }
