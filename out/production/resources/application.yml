@@ -1,5 +1,0 @@
-dumping-machine:
-  bootstrap-servers: 10.164.34.186:9092,10.164.40.143:9092,10.164.32.214:9092,10.164.38.50:9092,10.164.38.228:9092
-  schema-registry-url: http://schema-registry.private.prod.vivareal.io
-  group-id: dumping-machine-testing
-  topics: prod-listings-listingsv3-avro-hybrid-v1
