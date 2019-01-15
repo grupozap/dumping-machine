@@ -1,9 +1,8 @@
 package com.grupozap.dumping_machine.partitioners;
 
+import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
 import com.grupozap.dumping_machine.uploaders.Uploader;
 import com.grupozap.dumping_machine.writers.Writer;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
@@ -11,27 +10,27 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class HourlyBasedPartitioner {
-    private static final long PARTITION_FORGET = (long) 6000.0;
-
     private HashMap<Writer, ArrayList<PartitionInfo>> partitions;
 
     private final String topic;
     private final Uploader uploader;
+    private final long partitionForget;
 
-    public HourlyBasedPartitioner(String topic, Uploader uploader) {
+    public HourlyBasedPartitioner(String topic, Uploader uploader, long partitionForget) {
         this.topic = topic;
         this.uploader = uploader;
+        this.partitionForget = partitionForget;
         this.partitions = new HashMap<>();
     }
 
-    public void consume(ConsumerRecord<String, GenericRecord> record) {
+    public void consume(AvroExtendedMessage record) {
         this.partitions = this.addOrUpdateWriter(this.partitions, record);
     }
 
-    private HashMap<Writer, ArrayList<PartitionInfo>> addOrUpdateWriter(HashMap<Writer, ArrayList<PartitionInfo>> partitions, ConsumerRecord<String, GenericRecord> record) {
+    private HashMap<Writer, ArrayList<PartitionInfo>> addOrUpdateWriter(HashMap<Writer, ArrayList<PartitionInfo>> partitions, AvroExtendedMessage record) {
         Writer recordWriter = null;
         ArrayList<PartitionInfo> partitionInfo = new ArrayList<>();
-        long timestamp = record.timestamp();
+        long timestamp = record.getTimestamp();
 
         for(Map.Entry<Writer, ArrayList<PartitionInfo>> pair : partitions.entrySet()) {
             if(this.getMinTimestamp(pair.getKey().getFirstTimestamp()) < timestamp && timestamp < this.getMaxTimestamp(pair.getKey().getFirstTimestamp())) {
@@ -40,7 +39,7 @@ public class HourlyBasedPartitioner {
         }
 
         if(recordWriter == null) {
-            recordWriter = new Writer(record.partition(), record.offset(), timestamp, System.currentTimeMillis());
+            recordWriter = new Writer(record.getPartition(), record.getOffset(), timestamp, System.currentTimeMillis());
         } else {
             partitionInfo = partitions.get(recordWriter);
         }
@@ -75,24 +74,24 @@ public class HourlyBasedPartitioner {
         return cal.getTimeInMillis();
     }
 
-    private ArrayList<PartitionInfo> addOrUpdatePartitionInfo(ArrayList<PartitionInfo> partitionInfos, ConsumerRecord<String, GenericRecord> record) {
+    private ArrayList<PartitionInfo> addOrUpdatePartitionInfo(ArrayList<PartitionInfo> partitionInfos, AvroExtendedMessage record) {
         Integer partitionIndex = null;
 
         for(PartitionInfo partitionInfo : partitionInfos) {
-            if(partitionInfo.getPartition() == record.partition()) {
+            if(partitionInfo.getPartition() == record.getPartition()) {
                 partitionIndex = partitionInfos.indexOf(partitionInfo);
             }
         }
 
         if(partitionIndex == null) {
-            PartitionInfo partitionInfo = new PartitionInfo(record.partition(), record.offset());
+            PartitionInfo partitionInfo = new PartitionInfo(record.getPartition(), record.getOffset());
 
             partitionInfos.add(partitionInfo);
         } else {
             PartitionInfo partitionInfo = partitionInfos.get(partitionIndex);
 
-            partitionInfo.setPartition(record.partition());
-            partitionInfo.setOffset(record.offset());
+            partitionInfo.setPartition(record.getPartition());
+            partitionInfo.setOffset(record.getOffset());
 
             partitionInfos.set(partitionIndex, partitionInfo);
         }
@@ -105,7 +104,7 @@ public class HourlyBasedPartitioner {
         ArrayList<Writer> removedWriters = new ArrayList<>();
 
         for(Map.Entry<Writer, ArrayList<PartitionInfo>> entry : this.partitions.entrySet()) {
-            if (System.currentTimeMillis() > entry.getKey().getLastTimestamp() + PARTITION_FORGET) {
+            if (System.currentTimeMillis() > entry.getKey().getLastTimestamp() + this.partitionForget) {
                 for(PartitionInfo partitionInfo : entry.getValue()) {
                     TopicPartition topicPartition = new TopicPartition(this.topic, partitionInfo.getPartition());
                     OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(partitionInfo.getOffset());

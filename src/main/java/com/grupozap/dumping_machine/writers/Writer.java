@@ -1,5 +1,6 @@
 package com.grupozap.dumping_machine.writers;
 
+import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -23,12 +24,12 @@ public class Writer {
         this.lastTimestamp = lastTimestamp;
     }
 
-    public void write(ConsumerRecord<String, GenericRecord> record) {
+    public void write(AvroExtendedMessage record) {
         if(avroParquetRecordWriter == null) {
-            avroParquetRecordWriter = createFile(record.value().getSchema());
+            avroParquetRecordWriter = createFile(record.getSchema());
         }
 
-        avroParquetRecordWriter.write(record.value());
+        avroParquetRecordWriter.write(record.getRecord());
     }
 
     public void close() {
