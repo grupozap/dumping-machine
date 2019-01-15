@@ -7,7 +7,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import java.io.File;
 import java.io.IOException;
 
-@SuppressWarnings("ALL")
 public class Writer {
     private AvroParquetRecordWriter avroParquetRecordWriter;
     private final String localPath = "./tmp/parquet/";

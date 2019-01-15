@@ -7,21 +7,21 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 
 import java.io.File;
 
-public class S3Uploader {
-    private final String clientRegion;
+public class S3Uploader implements Uploader {
     private final String bucketName;
-    private final AmazonS3 s3Client;
+    private final String bucketRegion;
 
-    public S3Uploader() {
-        this.clientRegion = "us-east-1";
-        this.bucketName = "grupozap-datalake-dev";
-        this.s3Client = AmazonS3ClientBuilder.standard()
-                .withRegion(clientRegion)
-                .withCredentials(new EnvironmentVariableCredentialsProvider())
-                .build();
+    public S3Uploader(String bucketName, String bucketRegion) {
+        this.bucketName = bucketName;
+        this.bucketRegion = bucketRegion;
     }
 
     public void upload(String remotePath, String filename) {
-        this.s3Client.putObject(new PutObjectRequest(bucketName, remotePath, new File(filename)));
+        AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                .withRegion(this.bucketRegion)
+                .withCredentials(new EnvironmentVariableCredentialsProvider())
+                .build();
+
+        s3Client.putObject(new PutObjectRequest(this.bucketName, remotePath, new File(filename)));
     }
 }

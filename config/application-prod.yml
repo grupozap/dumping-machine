@@ -2,5 +2,7 @@ dumping-machine:
   bootstrap-servers: broker0.kafka.platform.prod.us-east-1.vivareal.io:9092,broker1.kafka.platform.prod.us-east-1.vivareal.io:9092,broker2.kafka.platform.prod.us-east-1.vivareal.io:9092,broker3.kafka.platform.prod.us-east-1.vivareal.io:9092,broker4.kafka.platform.prod.us-east-1.vivareal.io:9092
   schema-registry-url: http://schema-registry.private.prod.vivareal.io
   group-id: dumping-machine
+  bucket-name: grupozap-datalake-dev
+  bucket-region: us-east-1
   topics:
   - name: prod-listings-listingsv4-avro-hybrid-v1

@@ -1,6 +1,8 @@
 package com.grupozap.dumping_machine.streamers.kafka;
 
 import com.grupozap.dumping_machine.partitioners.HourlyBasedPartitioner;
+import com.grupozap.dumping_machine.uploaders.Uploader;
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.*;
 
@@ -8,30 +10,32 @@ import java.util.*;
 
 public class TopicStreamer implements Runnable {
     private final String topic;
-    private final long poolSize;
+    private final long poolTimeout;
+    private final Uploader uploader;
     private final String bootstrapServers;
     private final String groupId;
     private final String schemaRegistryUrl;
 
-    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, String topic) {
+    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, Uploader uploader, String topic) {
         this.bootstrapServers = bootstrapServers;
         this.groupId = groupId;
         this.schemaRegistryUrl = schemaRegistryUrl;
+        this.uploader = uploader;
         this.topic = topic;
-        this.poolSize = 100;
+        this.poolTimeout = 100;
     }
 
     @Override
     public void run() {
         ConsumerRecords<String, GenericRecord> records;
-        HourlyBasedPartitioner hourlyBasedPartitioner = new HourlyBasedPartitioner(this.topic);
+        HourlyBasedPartitioner hourlyBasedPartitioner = new HourlyBasedPartitioner(this.topic, this.uploader);
         KafkaConsumer consumer = getConsumer();
 
         try (consumer) {
             consumer.subscribe(Arrays.asList(this.topic));
 
             while (true) {
-                records = consumer.poll(this.poolSize);
+                records = consumer.poll(this.poolTimeout);
 
                 for (ConsumerRecord<String, GenericRecord> record : records) {
                     if (record.value() != null) {
@@ -54,7 +58,7 @@ public class TopicStreamer implements Runnable {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroDeserializer");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        props.put("schema.registry.url", this.schemaRegistryUrl);
+        props.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, this.schemaRegistryUrl);
 
         return new KafkaConsumer<>(props);
     }

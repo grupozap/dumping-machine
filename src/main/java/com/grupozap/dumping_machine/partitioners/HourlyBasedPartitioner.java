@@ -1,6 +1,6 @@
 package com.grupozap.dumping_machine.partitioners;
 
-import com.grupozap.dumping_machine.uploaders.S3Uploader;
+import com.grupozap.dumping_machine.uploaders.Uploader;
 import com.grupozap.dumping_machine.writers.Writer;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -11,12 +11,16 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class HourlyBasedPartitioner {
+    private static final long PARTITION_FORGET = (long) 6000.0;
+
     private HashMap<Writer, ArrayList<PartitionInfo>> partitions;
 
     private final String topic;
+    private final Uploader uploader;
 
-    public HourlyBasedPartitioner(String topic) {
+    public HourlyBasedPartitioner(String topic, Uploader uploader) {
         this.topic = topic;
+        this.uploader = uploader;
         this.partitions = new HashMap<>();
     }
 
@@ -36,7 +40,6 @@ public class HourlyBasedPartitioner {
         }
 
         if(recordWriter == null) {
-            System.out.println("Creating Writer " + record.partition() + " on Offset " + record.offset());
             recordWriter = new Writer(record.partition(), record.offset(), timestamp, System.currentTimeMillis());
         } else {
             partitionInfo = partitions.get(recordWriter);
@@ -46,7 +49,6 @@ public class HourlyBasedPartitioner {
         partitions.put(recordWriter, partitionInfo);
 
         recordWriter.write(record);
-        System.out.println("Consuming record offset " + record.offset() + " from partition " + record.partition() + " to writer " + recordWriter.getFirstTimestamp());
 
         return partitions;
     }
@@ -103,8 +105,7 @@ public class HourlyBasedPartitioner {
         ArrayList<Writer> removedWriters = new ArrayList<>();
 
         for(Map.Entry<Writer, ArrayList<PartitionInfo>> entry : this.partitions.entrySet()) {
-            long partitionForget = (long) 600000.0;
-            if (System.currentTimeMillis() > entry.getKey().getLastTimestamp() + partitionForget) {
+            if (System.currentTimeMillis() > entry.getKey().getLastTimestamp() + PARTITION_FORGET) {
                 for(PartitionInfo partitionInfo : entry.getValue()) {
                     TopicPartition topicPartition = new TopicPartition(this.topic, partitionInfo.getPartition());
                     OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(partitionInfo.getOffset());
@@ -112,7 +113,6 @@ public class HourlyBasedPartitioner {
                     // TODO: Sort writers by creation time instead of ordering the result by offsets
                     if(topicPartitionOffsetAndMetadataMap.get(topicPartition) == null || ( topicPartitionOffsetAndMetadataMap.get(topicPartition) != null && topicPartitionOffsetAndMetadataMap.get(topicPartition).offset() < offsetAndMetadata.offset() )) {
                         topicPartitionOffsetAndMetadataMap.put(topicPartition, offsetAndMetadata);
-                        System.out.println("Commiting " + partitionInfo.getPartition() + " on Offset " + partitionInfo.getOffset());
                     }
                 }
 
@@ -129,10 +129,8 @@ public class HourlyBasedPartitioner {
     }
 
     private void closeWriter(Writer writer) {
-        S3Uploader s3Uploader = new S3Uploader();
         writer.close();
-
-        s3Uploader.upload(this.topic + "/" + this.getPartitionPath(writer) + "/" + writer.getFilename(), writer.getLocalPath() + writer.getFilename());
+        this.uploader.upload(this.topic + "/" + this.getPartitionPath(writer) + "/" + writer.getFilename(), writer.getLocalPath() + writer.getFilename());
         writer.delete();
     }
 

@@ -1,15 +1,12 @@
 apply plugin: 'java'
 apply plugin: 'idea'
-apply plugin: 'org.springframework.boot'
+apply plugin: 'application'
 
 buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
         maven { url 'http://packages.confluent.io/maven/' }
-    }
-    dependencies {
-        classpath group: 'org.springframework.boot', name: 'spring-boot-gradle-plugin', version: "${springBootVersion}"
     }
 }
 
@@ -23,22 +20,15 @@ allprojects {
         maven { url "http://packages.confluent.io/maven/" }
     }
 
-    configurations {
-        all*.exclude module : 'spring-boot-starter-logging'
-    }
-
     dependencies {
-        compile(group: 'org.springframework.boot', name: 'spring-boot-starter', version: "${springBootVersion}")
+        compile group: 'org.yaml', name: 'snakeyaml', version: "${snakeyamlVersion}"
         compile group: 'org.apache.kafka', name: 'kafka_2.12', version: "${kafkaVersion}"
-//        compile group: 'org.apache.kafka', name: 'kafka-streamers', version: "${kafkaVersion}"
         compile group: 'org.apache.parquet', name: 'parquet-avro', version: "${parquetAvroVersion}"
         compile group: 'org.apache.hadoop', name: 'hadoop-common', version: "${hadoopVersion}"
         compile group: 'io.confluent', name: 'kafka-avro-serializer', version: "${avroVersion}"
-        compile group: 'com.google.code.gson', name: 'gson', version: "2.8.5"
-        compile group: 'org.slf4j', name: 'slf4j-log4j12', version: "1.7.25"
-        compile group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.11.470'
-
-        testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: "${springBootVersion}"
+        compile group: 'com.google.code.gson', name: 'gson', version: "${gsonVersion}"
+        compile group: 'org.slf4j', name: 'slf4j-log4j12', version: "${slf4jVersion}"
+        compile group: 'com.amazonaws', name: 'aws-java-sdk', version: "${awsJavaSdkVerion}"
     }
 
     sourceSets {
@@ -46,10 +36,18 @@ allprojects {
             java {
                 compileClasspath += main.output + test.output
                 runtimeClasspath += main.output + test.output
-                srcDir file('src/integration/java')
-                srcDirs += file("build/generated-main-avro-java")
             }
-            resources.srcDir file('src/integration/resources')
         }
+    }
+
+    application {
+        mainClassName = "com.grupozap.dumping_machine.Consumer"
+        applicationDefaultJvmArgs = ["-Dconfig=config/application.yml"]
+    }
+
+    tasks.withType(JavaExec) {
+        // Assign all Java system properties from
+        // the command line to the JavaExec task.
+        systemProperties System.properties
     }
 }

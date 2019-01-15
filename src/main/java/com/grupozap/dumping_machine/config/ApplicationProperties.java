@@ -1,12 +1,7 @@
 package com.grupozap.dumping_machine.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 
-@Component
-@ConfigurationProperties(prefix = "dumping-machine")
 public class ApplicationProperties {
     private String bootstrapServers;
     private String schemaRegistryUrl;
@@ -43,17 +38,5 @@ public class ApplicationProperties {
 
     public void setGroupId(String groupId) {
         this.groupId = groupId;
-    }
-
-    public static class TopicProperties {
-        private String name;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
     }
 }
