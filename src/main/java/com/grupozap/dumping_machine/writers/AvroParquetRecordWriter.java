@@ -10,7 +10,7 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
 
-public class AvroParquetRecordWriter {
+class AvroParquetRecordWriter {
     private final ParquetWriter writer;
 
     public AvroParquetRecordWriter(Schema schema, String path, String filename, int blockSize, int pageSize) throws IOException {

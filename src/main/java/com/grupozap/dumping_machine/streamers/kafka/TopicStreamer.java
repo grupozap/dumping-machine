@@ -27,14 +27,14 @@ public class TopicStreamer implements Runnable {
         HourlyBasedPartitioner hourlyBasedPartitioner = new HourlyBasedPartitioner(this.topic);
         KafkaConsumer consumer = getConsumer();
 
-        consumer.subscribe(Arrays.asList(this.topic));
+        try (consumer) {
+            consumer.subscribe(Arrays.asList(this.topic));
 
-        try {
             while (true) {
                 records = consumer.poll(this.poolSize);
 
                 for (ConsumerRecord<String, GenericRecord> record : records) {
-                    if(record.value() != null) {
+                    if (record.value() != null) {
                         hourlyBasedPartitioner.consume(record);
                     }
                 }
@@ -42,8 +42,6 @@ public class TopicStreamer implements Runnable {
                 // Flush closed partitions
                 consumer.commitSync(hourlyBasedPartitioner.getClosedPartitions());
             }
-        } finally {
-            consumer.close();
         }
     }
 

@@ -2,26 +2,20 @@ package com.grupozap.dumping_machine.writers;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
+@SuppressWarnings("ALL")
 public class Writer {
     private AvroParquetRecordWriter avroParquetRecordWriter;
-    private final int blockSize = 256 * 1024 * 1024;
-    private final int pageSize = 64 * 1024;
     private final String localPath = "./tmp/parquet/";
 
-    private int partition;
-    private long offset;
+    private final int partition;
+    private final long offset;
     private final long firstTimestamp;
-    private long lastTimestamp;
+    private final long lastTimestamp;
 
     public Writer(int partition, long offset, long firstTimestamp, long lastTimestamp) {
         this.partition = partition;
@@ -54,6 +48,8 @@ public class Writer {
 
     private AvroParquetRecordWriter createFile(Schema schema) {
         try {
+            int pageSize = 64 * 1024;
+            int blockSize = 256 * 1024 * 1024;
             avroParquetRecordWriter = new AvroParquetRecordWriter(schema, this.localPath, getFilename(), blockSize, pageSize);
         } catch (IOException e) {
             e.printStackTrace();

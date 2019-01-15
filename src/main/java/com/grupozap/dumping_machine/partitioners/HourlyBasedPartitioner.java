@@ -13,8 +13,6 @@ import java.util.*;
 public class HourlyBasedPartitioner {
     private HashMap<Writer, ArrayList<PartitionInfo>> partitions;
 
-    private final long partitionForget = (long) 600000.0;
-
     private final String topic;
 
     public HourlyBasedPartitioner(String topic) {
@@ -105,7 +103,8 @@ public class HourlyBasedPartitioner {
         ArrayList<Writer> removedWriters = new ArrayList<>();
 
         for(Map.Entry<Writer, ArrayList<PartitionInfo>> entry : this.partitions.entrySet()) {
-            if (System.currentTimeMillis() > entry.getKey().getLastTimestamp() + this.partitionForget) {
+            long partitionForget = (long) 600000.0;
+            if (System.currentTimeMillis() > entry.getKey().getLastTimestamp() + partitionForget) {
                 for(PartitionInfo partitionInfo : entry.getValue()) {
                     TopicPartition topicPartition = new TopicPartition(this.topic, partitionInfo.getPartition());
                     OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(partitionInfo.getOffset());
@@ -137,7 +136,7 @@ public class HourlyBasedPartitioner {
         writer.delete();
     }
 
-    public String getPartitionPath(Writer writer) {
+    private String getPartitionPath(Writer writer) {
         SimpleDateFormat dayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat hourDateFormat = new SimpleDateFormat("HH");
         Date date = new Date(writer.getFirstTimestamp());

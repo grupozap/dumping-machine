@@ -4,4 +4,3 @@ dumping-machine:
   group-id: dumping-machine
   topics:
   - name: prod-listings-listingsv4-avro-hybrid-v1
-  - name: prod

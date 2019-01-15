@@ -8,9 +8,9 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import java.io.File;
 
 public class S3Uploader {
-    String clientRegion;
-    String bucketName;
-    AmazonS3 s3Client;
+    private final String clientRegion;
+    private final String bucketName;
+    private final AmazonS3 s3Client;
 
     public S3Uploader() {
         this.clientRegion = "us-east-1";
