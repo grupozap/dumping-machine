@@ -1,0 +1,51 @@
+apiVersion: v1
+data:
+  application.yml: |
+    bootstrapServers: broker0.kafka.platform.prod.us-east-1.vivareal.io:9092,broker1.kafka.platform.prod.us-east-1.vivareal.io:9092,broker2.kafka.platform.prod.us-east-1.vivareal.io:9092,broker3.kafka.platform.prod.us-east-1.vivareal.io:9092,broker4.kafka.platform.prod.us-east-1.vivareal.io:9092
+    schemaRegistryUrl: http://schema-registry.private.prod.vivareal.io
+    groupId: prod-dataplatform-dumping-machine
+    topics:
+    - name: prod-communication-liquid-leads-v1
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-communication-invalid-leads-v1
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-listings-listings-avro-tombstone-events-v1
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-dataplatform-clickstream-enriched-avro-events-v2
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-communication-insight-leads-v1
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-customercare-account-avro-events-v2
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-customercare-contract-avro-events-v2
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-listings-listingsv3-avro-hybrid-v1
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-listings-listingsv4-avro-hybrid-v1
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+    - name: prod-listingsmanagement-listingsv4-avro-tombstone-events-v1
+      bucketName: grupozap-datalake-dumping-machine-prod
+      bucketRegion: us-east-1
+      partitionForget: 300000
+kind: ConfigMap
+metadata:
+  name: dumping-machine-config
+  namespace: dataanalytics

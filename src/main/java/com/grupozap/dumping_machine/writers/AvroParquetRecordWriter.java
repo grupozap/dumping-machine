@@ -26,9 +26,7 @@ class AvroParquetRecordWriter {
 
     public void write(GenericRecord record) {
         try {
-            if(record != null) {
-                this.writer.write(record);
-            }
+            this.writer.write(record);
         } catch (IOException e) {
             e.printStackTrace();
         }

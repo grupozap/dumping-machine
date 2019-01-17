@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 
 class Consumer {
     public static void main(String[] args) {
-        System.out.println(System.getProperties());
         String properties = System.getProperty("config");
 
         if( properties == null ) {

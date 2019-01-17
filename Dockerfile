@@ -2,6 +2,6 @@ FROM openjdk:11-jre
 
 WORKDIR /opt/app/
 
-ADD build/libs/dumping-machine*.jar dumping-machine.jar
+ADD build/install/dumping-machine/ /opt/app/
 
-CMD java $JAVA_OPTS -jar dumping-machine.jar
+CMD ./bin/dumping-machine

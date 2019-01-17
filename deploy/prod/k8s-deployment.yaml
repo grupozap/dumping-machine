@@ -21,13 +21,21 @@ spec:
         product: dataanalytics
         env: prod
     spec:
+      nodeSelector:
+        vivareal.io/reserved-for: memory
+      tolerations:
+        - effect: NoSchedule
+          key: vivareal.io/reserved-for
+          value: memory
       containers:
       - name: dumping-machine
         image: vivareal/dumping-machine:0.0.1
         imagePullPolicy: Always
         env:
         - name: JAVA_OPTS
-          value: -Xms256m -Xmx2048m -XX:MaxMetaspaceSize=512m
+          value: -Xms2048m -Xmx8192m -XX:MaxMetaspaceSize=512m
+        - name: DUMPING_MACHINE_OPTS
+          value: -Dconfig=/opt/app/application.yml
         - name: AWS_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -40,9 +48,17 @@ spec:
               name: brainwaves
         resources:
           requests:
-            cpu: 512m
-            memory: 1Gi
+            cpu: 6
+            memory: 23Gi
           limits:
-            cpu: 2048m
-            memory: 4Gi
+            cpu: 7
+            memory: 25Gi
+        volumeMounts:
+          - name: dumping-machine-config
+            mountPath: "/opt/app/application.yml"
+            subPath: "application.yml"
       terminationGracePeriodSeconds: 30
+      volumes:
+        - name: dumping-machine-config
+          configMap:
+            name: dumping-machine-config
