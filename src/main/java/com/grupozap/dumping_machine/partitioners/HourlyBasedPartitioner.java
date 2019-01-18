@@ -156,4 +156,18 @@ public class HourlyBasedPartitioner {
 
         return "dt=" + dayDateFormat.format(date) + "/hr=" + hourDateFormat.format(date);
     }
+
+    public void clearPartitions() {
+        for(Writer writer : this.partitions.keySet()) {
+            writer.close();
+            writer.delete();
+        }
+
+        this.partitions = new HashMap<>();
+        this.partitionInfos = new HashMap<>();
+    }
+
+    public HashMap<Integer, PartitionInfo> getPartitionInfos() {
+        return this.partitionInfos;
+    }
 }

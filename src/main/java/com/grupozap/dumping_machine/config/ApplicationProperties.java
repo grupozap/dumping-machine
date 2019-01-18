@@ -6,6 +6,7 @@ public class ApplicationProperties {
     private String bootstrapServers;
     private String schemaRegistryUrl;
     private String groupId;
+    private Integer sessionTimeout;
     private List<TopicProperties> topics;
 
     public List<TopicProperties> getTopics() {
@@ -38,5 +39,17 @@ public class ApplicationProperties {
 
     public void setGroupId(String groupId) {
         this.groupId = groupId;
+    }
+
+    public Integer getSessionTimeout() {
+        if(sessionTimeout == null) {
+            return 30000;
+        } else {
+            return sessionTimeout;
+        }
+    }
+
+    public void setSessionTimeout(Integer sessionTimeout) {
+        this.sessionTimeout = sessionTimeout;
     }
 }

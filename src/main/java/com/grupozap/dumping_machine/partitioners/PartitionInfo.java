@@ -1,6 +1,6 @@
 package com.grupozap.dumping_machine.partitioners;
 
-class PartitionInfo {
+public class PartitionInfo {
     private int partition;
     private long offset;
 
