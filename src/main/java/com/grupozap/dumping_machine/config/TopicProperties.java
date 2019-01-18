@@ -5,7 +5,8 @@ public class TopicProperties {
     private String uploaderClass;
     private String bucketName;
     private String bucketRegion;
-    private long partitionForget;
+    private Long poolTimeout;
+    private Long partitionForget;
 
     public String getUploaderClass() {
         return uploaderClass;
@@ -39,11 +40,23 @@ public class TopicProperties {
         this.bucketRegion = bucketRegion;
     }
 
-    public long getPartitionForget() {
+    public Long getPartitionForget() {
         return partitionForget;
     }
 
-    public void setPartitionForget(long partitionForget) {
+    public void setPartitionForget(Long partitionForget) {
         this.partitionForget = partitionForget;
+    }
+
+    public Long getPoolTimeout() {
+        if(poolTimeout == null) {
+            return Long.valueOf(100);
+        } else {
+            return poolTimeout;
+        }
+    }
+
+    public void setPoolTimeout(Long poolTimeout) {
+        this.poolTimeout = poolTimeout;
     }
 }

@@ -5,11 +5,15 @@ import com.grupozap.dumping_machine.uploaders.Uploader;
 import com.grupozap.dumping_machine.writers.Writer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class HourlyBasedPartitioner {
+    private final Logger logger = LoggerFactory.getLogger(HourlyBasedPartitioner.class);
+
     private HashMap<Writer, HashMap<Integer, PartitionInfo>> partitions;
     private HashMap<Integer, PartitionInfo> partitionInfos;
 
@@ -44,7 +48,7 @@ public class HourlyBasedPartitioner {
 
         if(recordWriter == null) {
             recordWriter = new Writer(this.topic, record.getPartition(), record.getOffset(), timestamp, System.currentTimeMillis());
-            System.out.println("[" + System.currentTimeMillis() + "] Opening writer for " + this.topic + " partition " + record.getPartition());
+            logger.info("Topic: " + this.topic + " - Opening writer for partition " + record.getPartition());
         } else {
             partitionInfo = partitions.get(recordWriter);
         }
@@ -53,6 +57,7 @@ public class HourlyBasedPartitioner {
         partitions.put(recordWriter, partitionInfo);
 
         recordWriter.write(record);
+        logger.trace("Topic: " + this.topic + " - Consuming message (Partition: " + record.getPartition() + ", Offset: " + record.getOffset() + ")");
 
         return partitions;
     }
@@ -61,6 +66,7 @@ public class HourlyBasedPartitioner {
         PartitionInfo partitionInfo = partitionInfos.get(record.getPartition());
 
         if(partitionInfo == null) {
+            logger.info("Topic: " + this.topic + " - Appending partition " + record.getPartition());
             partitionInfo = new PartitionInfo(record.getPartition(), record.getOffset());
         } else {
             partitionInfo.setPartition(record.getPartition());
@@ -137,7 +143,7 @@ public class HourlyBasedPartitioner {
     private void closeWriter(Writer writer) {
         writer.close();
 
-        System.out.println("[" + System.currentTimeMillis() + "] Uploading writer for " + this.topic + " path " + writer.getLocalPath() + writer.getFilename());
+        logger.info("Topic: " + this.topic + " - Uploading writer for " + this.topic + " path " + writer.getLocalPath() + writer.getFilename());
 
         this.uploader.upload(this.topic + "/" + this.getPartitionPath(writer) + "/" + writer.getFilename(), writer.getLocalPath() + writer.getFilename());
         writer.delete();
