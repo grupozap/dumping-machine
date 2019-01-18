@@ -15,6 +15,7 @@ public class Writer {
     private final long offset;
     private final long firstTimestamp;
     private final long creationTimestamp;
+    private long updateTimestamp;
 
     public Writer(String topic, int partition, long offset, long firstTimestamp, long creationTimestamp) {
         this.topic = topic;
@@ -22,6 +23,7 @@ public class Writer {
         this.offset = offset;
         this.firstTimestamp = firstTimestamp;
         this.creationTimestamp = creationTimestamp;
+        this.updateTimestamp = System.currentTimeMillis();
     }
 
     public void write(AvroExtendedMessage record) {
@@ -30,6 +32,7 @@ public class Writer {
         }
 
         avroParquetRecordWriter.write(record.getRecord());
+        this.updateTimestamp = System.currentTimeMillis();
     }
 
     public void close() {
@@ -64,5 +67,9 @@ public class Writer {
 
     public String getFilename() {
         return offset + "_" + partition + ".parquet";
+    }
+
+    public long getUpdateTimestamp() {
+        return updateTimestamp;
     }
 }

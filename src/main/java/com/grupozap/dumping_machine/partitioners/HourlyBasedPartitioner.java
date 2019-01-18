@@ -77,7 +77,7 @@ public class HourlyBasedPartitioner {
         ArrayList<Writer> removedWriters = new ArrayList<>();
 
         for(Map.Entry<Writer, HashMap<Integer, PartitionInfo>> entry : this.partitions.entrySet()) {
-            if(entry.getKey().getCreationTimestamp() + this.partitionForget < System.currentTimeMillis() && isPartitionClosed(entry.getValue())) {
+            if(entry.getKey().getUpdateTimestamp() + this.partitionForget < System.currentTimeMillis() && isPartitionClosed(entry.getValue())) {
                 for(PartitionInfo partitionInfo : entry.getValue().values()) {
                     TopicPartition topicPartition = new TopicPartition(this.topic, partitionInfo.getPartition());
                     OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(partitionInfo.getOffset());

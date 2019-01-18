@@ -37,10 +37,6 @@ data:
       bucketName: grupozap-datalake-dumping-machine-prod
       bucketRegion: us-east-1
       partitionForget: 300000
-    - name: prod-listings-listingsv4-avro-hybrid-v1
-      bucketName: grupozap-datalake-dumping-machine-prod
-      bucketRegion: us-east-1
-      partitionForget: 300000
     - name: prod-listingsmanagement-listingsv4-avro-tombstone-events-v1
       bucketName: grupozap-datalake-dumping-machine-prod
       bucketRegion: us-east-1
