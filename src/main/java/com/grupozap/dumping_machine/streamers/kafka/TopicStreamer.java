@@ -6,10 +6,14 @@ import com.grupozap.dumping_machine.uploaders.Uploader;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class TopicStreamer implements Runnable {
+    private final Logger logger = LoggerFactory.getLogger(TopicStreamer.class);
+
     private final String topic;
     private final long poolTimeout;
     private final Uploader uploader;
@@ -18,14 +22,14 @@ public class TopicStreamer implements Runnable {
     private final String schemaRegistryUrl;
     private final long partitionForget;
 
-    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, Uploader uploader, String topic, long partitionForget) {
+    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, Uploader uploader, String topic, long poolTimeout, long partitionForget) {
         this.bootstrapServers = bootstrapServers;
         this.groupId = groupId;
         this.schemaRegistryUrl = schemaRegistryUrl;
         this.uploader = uploader;
         this.topic = topic;
+        this.poolTimeout = poolTimeout;
         this.partitionForget = partitionForget;
-        this.poolTimeout = 100;
     }
 
     @Override
@@ -50,7 +54,7 @@ public class TopicStreamer implements Runnable {
                 consumer.commitSync(hourlyBasedPartitioner.getClosedPartitions());
             }
         } finally {
-            System.out.println("[" + System.currentTimeMillis() + "] Closing consumer for topic " + this.topic);
+            logger.error("Topic: " + this.topic + " - Closing consumer");
             consumer.unsubscribe();
             consumer.close();
         }

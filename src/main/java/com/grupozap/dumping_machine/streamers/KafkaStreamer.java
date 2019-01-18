@@ -28,7 +28,7 @@ public class KafkaStreamer {
     public void run() {
         for(TopicProperties topicProperty : topicProperties) {
             S3Uploader s3Uploader = new S3Uploader(topicProperty.getBucketName(), topicProperty.getBucketRegion());
-            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, s3Uploader, topicProperty.getName(), topicProperty.getPartitionForget());
+            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, s3Uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget());
 
             this.pool.execute(topicStreamer);
         }
