@@ -1,8 +1,7 @@
 package com.grupozap.dumping_machine.writers;
 
+import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
 import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,24 +10,29 @@ public class Writer {
     private AvroParquetRecordWriter avroParquetRecordWriter;
     private final String localPath = "./tmp/parquet/";
 
+    private final String topic;
     private final int partition;
     private final long offset;
     private final long firstTimestamp;
-    private final long lastTimestamp;
+    private final long creationTimestamp;
+    private long updateTimestamp;
 
-    public Writer(int partition, long offset, long firstTimestamp, long lastTimestamp) {
+    public Writer(String topic, int partition, long offset, long firstTimestamp, long creationTimestamp) {
+        this.topic = topic;
         this.partition = partition;
         this.offset = offset;
         this.firstTimestamp = firstTimestamp;
-        this.lastTimestamp = lastTimestamp;
+        this.creationTimestamp = creationTimestamp;
+        this.updateTimestamp = System.currentTimeMillis();
     }
 
-    public void write(ConsumerRecord<String, GenericRecord> record) {
+    public void write(AvroExtendedMessage record) {
         if(avroParquetRecordWriter == null) {
-            avroParquetRecordWriter = createFile(record.value().getSchema());
+            avroParquetRecordWriter = createFile(record.getSchema());
         }
 
-        avroParquetRecordWriter.write(record.value());
+        avroParquetRecordWriter.write(record.getRecord());
+        this.updateTimestamp = System.currentTimeMillis();
     }
 
     public void close() {
@@ -41,15 +45,15 @@ public class Writer {
         return firstTimestamp;
     }
 
-    public long getLastTimestamp() {
-        return lastTimestamp;
+    public long getCreationTimestamp() {
+        return creationTimestamp;
     }
 
     private AvroParquetRecordWriter createFile(Schema schema) {
         try {
             int pageSize = 64 * 1024;
             int blockSize = 256 * 1024 * 1024;
-            avroParquetRecordWriter = new AvroParquetRecordWriter(schema, this.localPath, getFilename(), blockSize, pageSize);
+            avroParquetRecordWriter = new AvroParquetRecordWriter(schema, this.getLocalPath(), getFilename(), blockSize, pageSize);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -58,10 +62,14 @@ public class Writer {
     }
 
     public String getLocalPath() {
-        return this.localPath;
+        return this.localPath + this.topic + "/";
     }
 
     public String getFilename() {
         return offset + "_" + partition + ".parquet";
+    }
+
+    public long getUpdateTimestamp() {
+        return updateTimestamp;
     }
 }

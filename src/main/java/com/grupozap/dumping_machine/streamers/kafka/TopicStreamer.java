@@ -1,5 +1,6 @@
 package com.grupozap.dumping_machine.streamers.kafka;
 
+import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
 import com.grupozap.dumping_machine.partitioners.HourlyBasedPartitioner;
 import com.grupozap.dumping_machine.uploaders.Uploader;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
@@ -15,37 +16,43 @@ public class TopicStreamer implements Runnable {
     private final String bootstrapServers;
     private final String groupId;
     private final String schemaRegistryUrl;
+    private final long partitionForget;
 
-    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, Uploader uploader, String topic) {
+    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, Uploader uploader, String topic, long partitionForget) {
         this.bootstrapServers = bootstrapServers;
         this.groupId = groupId;
         this.schemaRegistryUrl = schemaRegistryUrl;
         this.uploader = uploader;
         this.topic = topic;
+        this.partitionForget = partitionForget;
         this.poolTimeout = 100;
     }
 
     @Override
     public void run() {
         ConsumerRecords<String, GenericRecord> records;
-        HourlyBasedPartitioner hourlyBasedPartitioner = new HourlyBasedPartitioner(this.topic, this.uploader);
+        HourlyBasedPartitioner hourlyBasedPartitioner = new HourlyBasedPartitioner(this.topic, this.uploader, this.partitionForget);
         KafkaConsumer consumer = getConsumer();
 
-        try (consumer) {
-            consumer.subscribe(Arrays.asList(this.topic));
+        consumer.subscribe(Arrays.asList(this.topic));
 
+        try {
             while (true) {
                 records = consumer.poll(this.poolTimeout);
 
                 for (ConsumerRecord<String, GenericRecord> record : records) {
                     if (record.value() != null) {
-                        hourlyBasedPartitioner.consume(record);
+                        hourlyBasedPartitioner.consume(new AvroExtendedMessage(record));
                     }
                 }
 
                 // Flush closed partitions
                 consumer.commitSync(hourlyBasedPartitioner.getClosedPartitions());
             }
+        } finally {
+            System.out.println("[" + System.currentTimeMillis() + "] Closing consumer for topic " + this.topic);
+            consumer.unsubscribe();
+            consumer.close();
         }
     }
 

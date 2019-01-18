@@ -42,12 +42,19 @@ allprojects {
 
     application {
         mainClassName = "com.grupozap.dumping_machine.Consumer"
-        applicationDefaultJvmArgs = ["-Dconfig=config/application.yml"]
     }
 
     tasks.withType(JavaExec) {
         // Assign all Java system properties from
         // the command line to the JavaExec task.
         systemProperties System.properties
+    }
+    
+    jar {
+        manifest {
+            attributes(
+                    'Main-Class': 'com.grupozap.dumping_machine.Consumer'
+            )
+        }
     }
 }

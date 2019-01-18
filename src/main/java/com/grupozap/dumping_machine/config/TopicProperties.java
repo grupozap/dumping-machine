@@ -5,6 +5,7 @@ public class TopicProperties {
     private String uploaderClass;
     private String bucketName;
     private String bucketRegion;
+    private long partitionForget;
 
     public String getUploaderClass() {
         return uploaderClass;
@@ -36,5 +37,13 @@ public class TopicProperties {
 
     public void setBucketRegion(String bucketRegion) {
         this.bucketRegion = bucketRegion;
+    }
+
+    public long getPartitionForget() {
+        return partitionForget;
+    }
+
+    public void setPartitionForget(long partitionForget) {
+        this.partitionForget = partitionForget;
     }
 }

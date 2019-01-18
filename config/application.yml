@@ -5,3 +5,4 @@ topics:
 - name: prod-listings-listingsv3-avro-hybrid-v1
   bucketName: grupozap-datalake-dev
   bucketRegion: us-east-1
+  partitionForget: 3000
