@@ -41,7 +41,7 @@ allprojects {
     }
 
     application {
-        mainClassName = "com.grupozap.dumping_machine.Consumer"
+        mainClassName = "com.grupozap.dumping_machine.Application"
     }
 
     tasks.withType(JavaExec) {
@@ -53,7 +53,7 @@ allprojects {
     jar {
         manifest {
             attributes(
-                    'Main-Class': 'com.grupozap.dumping_machine.Consumer'
+                    'Main-Class': 'com.grupozap.dumping_machine.Application'
             )
         }
     }

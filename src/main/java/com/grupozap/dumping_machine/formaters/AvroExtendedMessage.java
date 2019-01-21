@@ -1,5 +1,7 @@
 package com.grupozap.dumping_machine.formaters;
 
+import com.grupozap.dumping_machine.deserializers.AvroSchemaRegistryDeserializer;
+import com.grupozap.dumping_machine.deserializers.RecordType;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
@@ -32,8 +34,10 @@ public class AvroExtendedMessage {
 
         newGenericRecordBuilder.set("metadata", this.getMetadata());
 
-        for(Schema.Field field : this.record.value().getSchema().getFields()) {
-            newGenericRecordBuilder.set(field.name(), this.record.value().get(field.name()));
+        if(!isTombstone()) {
+            for(Schema.Field field : this.record.value().getSchema().getFields()) {
+                newGenericRecordBuilder.set(field.name(), this.record.value().get(field.name()));
+            }
         }
 
         return newGenericRecordBuilder.build();
@@ -51,25 +55,37 @@ public class AvroExtendedMessage {
     }
 
     public Schema getSchema() {
-        int position = 1;
+        if(isTombstone()) {
+            Schema newSchema = Schema.createRecord("KafkaTombstone", "Kafka Tombstone", "com.grupozap.dumping_machine", false);
 
-        Schema schema = this.record.value().getSchema();
-        List<Schema.Field> fields = schema.getFields();
+            ArrayList<Schema.Field> newFields = new ArrayList();
 
-        ArrayList<Schema.Field> newFields = new ArrayList();
+            newFields.add(0, new Schema.Field("metadata", Schema.createUnion(this.getMetadataSchema(), Schema.create(Schema.Type.NULL)), "", "null"));
 
-        Schema newSchema = Schema.createRecord(schema.getName(), schema.getDoc(), schema.getNamespace(), schema.isError());
+            newSchema.setFields(newFields);
 
-        newFields.add(0, new Schema.Field("metadata", Schema.createUnion(this.getMetadataSchema(), Schema.create(Schema.Type.NULL)), "", "null"));
+            return newSchema;
+        } else {
+            int position = 1;
 
-        for(Schema.Field field : fields) {
-            newFields.add(position, new Schema.Field(field.name(), field.schema(), field.doc(), field.defaultVal()));
-            position++;
+            Schema schema = this.record.value().getSchema();
+            List<Schema.Field> fields = schema.getFields();
+
+            ArrayList<Schema.Field> newFields = new ArrayList();
+
+            Schema newSchema = Schema.createRecord(schema.getName(), schema.getDoc(), schema.getNamespace(), schema.isError());
+
+            newFields.add(0, new Schema.Field("metadata", Schema.createUnion(this.getMetadataSchema(), Schema.create(Schema.Type.NULL)), "", "null"));
+
+            for(Schema.Field field : fields) {
+                newFields.add(position, new Schema.Field(field.name(), field.schema(), field.doc(), field.defaultVal()));
+                position++;
+            }
+
+            newSchema.setFields(newFields);
+
+            return newSchema;
         }
-
-        newSchema.setFields(newFields);
-
-        return newSchema;
     }
 
     public Schema getMetadataSchema() {
@@ -86,4 +102,20 @@ public class AvroExtendedMessage {
 
         return schema;
     }
+
+    public RecordType getType() {
+        if(isTombstone()) {
+            return RecordType.TOMBSTONE;
+        } else if(isError()) {
+            return RecordType.ERROR;
+        } else {
+            return RecordType.RECORD;
+        }
+    }
+
+    public boolean isTombstone() {
+        return record.value() == null;
+    }
+
+    public boolean isError() { return record.value() != null && record.value().getSchema().getName().equals("KafkaException"); }
 }

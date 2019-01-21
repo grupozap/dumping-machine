@@ -49,14 +49,14 @@ public class TopicStreamer implements Runnable {
             while (true) {
                 records = consumer.poll(this.poolTimeout);
 
+                logger.info("Topic: " + this.topic + " - Consuming " + records.count() + " records");
+
                 for (ConsumerRecord<String, GenericRecord> record : records) {
-                    if (record.value() != null) {
-                        hourlyBasedPartitioner.consume(new AvroExtendedMessage(record));
-                    }
+                    hourlyBasedPartitioner.consume(new AvroExtendedMessage(record));
                 }
 
                 // Flush closed partitions
-                consumer.commitSync(hourlyBasedPartitioner.getClosedPartitions());
+                consumer.commitSync(hourlyBasedPartitioner.commitWriters());
             }
         } finally {
             logger.error("Topic: " + this.topic + " - Closing consumer");
@@ -72,7 +72,7 @@ public class TopicStreamer implements Runnable {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroDeserializer");
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "com.grupozap.dumping_machine.deserializers.AvroSchemaRegistryDeserializer");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, this.sessionTimeout);
         props.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, this.schemaRegistryUrl);
@@ -95,11 +95,21 @@ public class TopicStreamer implements Runnable {
 
         @Override
         public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-            if(hourlyBasedPartitioner.getPartitionInfos().keySet().containsAll(partitions)) { // If this is just a session timeout
-                for(Map.Entry<Integer, PartitionInfo> entry : hourlyBasedPartitioner.getPartitionInfos().entrySet()) {
-                    logger.info("Topic: " + this.topic + " - Seeking partition " + entry.getKey() + " to offset " + entry.getValue().getOffset());
+            int partitionsCount = 0;
 
-                    consumer.seek(new TopicPartition(this.topic, entry.getKey()), entry.getValue().getOffset());
+            for(PartitionInfo partitionInfo : hourlyBasedPartitioner.getPartitionInfos()) {
+                for(TopicPartition topicPartition : partitions) {
+                    if(topicPartition.partition() == partitionInfo.getPartition()) {
+                        partitionsCount++;
+                    }
+                }
+            }
+
+            if(partitionsCount == hourlyBasedPartitioner.getPartitionInfos().size()) { // If this is just a session timeout
+                for(PartitionInfo partitionInfo : hourlyBasedPartitioner.getPartitionInfos()) {
+                    logger.info("Topic: " + this.topic + " - Seeking partition " + partitionInfo.getPartition() + " to offset " + partitionInfo.getLastOffset());
+
+                    consumer.seek(new TopicPartition(this.topic, partitionInfo.getPartition()), partitionInfo.getLastOffset());
                 }
             } else { // If this is a rebalancing
                 logger.info("Topic: " + this.topic + " - Cleaning for rebalance");
