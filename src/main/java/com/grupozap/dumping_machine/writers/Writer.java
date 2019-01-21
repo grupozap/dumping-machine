@@ -8,7 +8,6 @@ import java.io.IOException;
 
 public class Writer {
     private AvroParquetRecordWriter avroParquetRecordWriter;
-    private final String localPath = "./tmp/parquet/";
 
     private final String topic;
     private final int partition;
@@ -45,10 +44,6 @@ public class Writer {
         return firstTimestamp;
     }
 
-    public long getCreationTimestamp() {
-        return creationTimestamp;
-    }
-
     private AvroParquetRecordWriter createFile(Schema schema) {
         try {
             int pageSize = 64 * 1024;
@@ -62,7 +57,8 @@ public class Writer {
     }
 
     public String getLocalPath() {
-        return this.localPath + this.topic + "/";
+        String localPath = "./tmp/parquet/";
+        return localPath + this.topic + "/";
     }
 
     public String getFilename() {

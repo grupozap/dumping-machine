@@ -50,7 +50,7 @@ public class TopicProperties {
 
     public Long getPoolTimeout() {
         if(poolTimeout == null) {
-            return Long.valueOf(100);
+            return 100L;
         } else {
             return poolTimeout;
         }

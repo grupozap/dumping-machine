@@ -1,6 +1,7 @@
 package com.grupozap.dumping_machine.config;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ApplicationProperties {
     private String bootstrapServers;
@@ -42,11 +43,7 @@ public class ApplicationProperties {
     }
 
     public Integer getSessionTimeout() {
-        if(sessionTimeout == null) {
-            return 30000;
-        } else {
-            return sessionTimeout;
-        }
+        return Objects.requireNonNullElse(sessionTimeout, 30000);
     }
 
     public void setSessionTimeout(Integer sessionTimeout) {

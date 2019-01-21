@@ -11,7 +11,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class TopicStreamer implements Runnable {
@@ -85,10 +84,10 @@ public class TopicStreamer implements Runnable {
         private final Logger logger = LoggerFactory.getLogger(TopicConsumerRebalanceListener.class);
 
         private final String topic;
-        private Consumer<?, ?> consumer;
+        private final Consumer<?, ?> consumer;
         private final HourlyBasedPartitioner hourlyBasedPartitioner;
 
-        public TopicConsumerRebalanceListener(Consumer<?, ?> consumer, String topic, HourlyBasedPartitioner hourlyBasedPartitioner) {
+        TopicConsumerRebalanceListener(Consumer<?, ?> consumer, String topic, HourlyBasedPartitioner hourlyBasedPartitioner) {
             this.consumer = consumer;
             this.topic = topic;
             this.hourlyBasedPartitioner = hourlyBasedPartitioner;
@@ -96,15 +95,7 @@ public class TopicStreamer implements Runnable {
 
         @Override
         public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-            int partitionsCount = 0;
-
-            for(Integer partition : hourlyBasedPartitioner.getPartitionInfos().keySet()) {
-                if(partitions.contains(partition)) {
-                    partitionsCount++;
-                }
-            }
-
-            if(partitionsCount == hourlyBasedPartitioner.getPartitionInfos().keySet().size()) { // If this is just a session timeout
+            if(hourlyBasedPartitioner.getPartitionInfos().keySet().containsAll(partitions)) { // If this is just a session timeout
                 for(Map.Entry<Integer, PartitionInfo> entry : hourlyBasedPartitioner.getPartitionInfos().entrySet()) {
                     logger.info("Topic: " + this.topic + " - Seeking partition " + entry.getKey() + " to offset " + entry.getValue().getOffset());
 
