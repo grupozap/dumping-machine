@@ -134,8 +134,10 @@ public class HourlyBasedPartitioner {
 
     private boolean arePartitionsClosed(ArrayList<PartitionInfo> partitions) {
         for(PartitionInfo partitionInfo : partitions) {
-            if (this.partitionInfos.get(partitionInfo.getPartition()).getLastOffset() <= partitionInfo.getLastOffset()) {
-                return false;
+            for(PartitionInfo partitionerPartitionInfo : this.partitionInfos) {
+                if (partitionerPartitionInfo.getPartition() == partitionInfo.getPartition() && partitionerPartitionInfo.getLastOffset() <= partitionInfo.getLastOffset()) {
+                    return false;
+                }
             }
         }
 
