@@ -124,7 +124,7 @@ public class HourlyBasedPartitioner {
         ArrayList<HourlyBasedRecordConsumer> removedHourlyBasedRecordConsumers = new ArrayList<>();
 
         for(Map.Entry<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> entry : this.writerPartitionInfos.entrySet()) {
-            if(entry.getKey().getUpdateTimestamp() + this.partitionForget < System.currentTimeMillis() && arePartitionsClosed(entry.getValue())) {
+            if(arePartitionsClosed(entry.getValue()) || entry.getKey().getUpdateTimestamp() + this.partitionForget < System.currentTimeMillis()) {
                 removedHourlyBasedRecordConsumers.add(entry.getKey());
             }
         }
