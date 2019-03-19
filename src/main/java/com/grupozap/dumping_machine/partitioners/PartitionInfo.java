@@ -30,7 +30,7 @@ public class PartitionInfo {
         return new TopicPartition(this.topic, this.getPartition());
     }
 
-    public OffsetAndMetadata getOffsetAndMetadata() {
-        return new OffsetAndMetadata(this.getLastOffset());
+    public OffsetAndMetadata getNextOffsetAndMetadata() {
+        return new OffsetAndMetadata(this.getLastOffset() + 1);
     }
 }

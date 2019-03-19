@@ -44,7 +44,7 @@ public class HourlyBasedPartitioner {
             for(PartitionInfo partitionInfo : writerPartitionInfos.get(hourlyBasedRecordConsumer)) {
                 // TODO: Sort writers by creation time instead of ordering the result by offsets
                 if (topicPartitionOffsetAndMetadataMap.get(partitionInfo.getTopicPartition()) == null || topicPartitionOffsetAndMetadataMap.get(partitionInfo.getTopicPartition()).offset() < partitionInfo.getLastOffset()) {
-                    topicPartitionOffsetAndMetadataMap.put(partitionInfo.getTopicPartition(), partitionInfo.getOffsetAndMetadata());
+                    topicPartitionOffsetAndMetadataMap.put(partitionInfo.getTopicPartition(), partitionInfo.getNextOffsetAndMetadata());
                 }
             }
 
