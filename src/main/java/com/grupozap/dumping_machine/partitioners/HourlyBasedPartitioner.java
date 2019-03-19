@@ -20,6 +20,8 @@ public class HourlyBasedPartitioner {
     private final Uploader uploader;
     private final long partitionForget;
 
+    private final long waitFor = 300000;
+
     public HourlyBasedPartitioner(String topic, Uploader uploader, long partitionForget) {
         this.topic = topic;
         this.uploader = uploader;
@@ -124,7 +126,7 @@ public class HourlyBasedPartitioner {
         ArrayList<HourlyBasedRecordConsumer> removedHourlyBasedRecordConsumers = new ArrayList<>();
 
         for(Map.Entry<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> entry : this.writerPartitionInfos.entrySet()) {
-            if(arePartitionsClosed(entry.getValue()) || entry.getKey().getUpdateTimestamp() + this.partitionForget < System.currentTimeMillis()) {
+            if((arePartitionsClosed(entry.getValue()) && entry.getKey().getUpdateTimestamp() + this.waitFor < System.currentTimeMillis()) || entry.getKey().getUpdateTimestamp() + this.partitionForget < System.currentTimeMillis()) {
                 removedHourlyBasedRecordConsumers.add(entry.getKey());
             }
         }
