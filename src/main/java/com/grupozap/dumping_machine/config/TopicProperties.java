@@ -2,9 +2,14 @@ package com.grupozap.dumping_machine.config;
 
 public class TopicProperties {
     private String name;
+    private String type;
     private String uploaderClass;
     private String bucketName;
     private String bucketRegion;
+    private String hdfsPath;
+    private String topicPath;
+    private String coreSitePath;
+    private String hdfsSitePath;
     private Long poolTimeout;
     private Long partitionForget;
 
@@ -58,5 +63,45 @@ public class TopicProperties {
 
     public void setPoolTimeout(Long poolTimeout) {
         this.poolTimeout = poolTimeout;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getHdfsPath() {
+        return hdfsPath;
+    }
+
+    public void setHdfsPath(String hdfsPath) {
+        this.hdfsPath = hdfsPath;
+    }
+
+    public String getCoreSitePath() {
+        return coreSitePath;
+    }
+
+    public void setCoreSitePath(String coreSitePath) {
+        this.coreSitePath = coreSitePath;
+    }
+
+    public String getHdfsSitePath() {
+        return hdfsSitePath;
+    }
+
+    public void setHdfsSitePath(String hdfsSitePath) {
+        this.hdfsSitePath = hdfsSitePath;
+    }
+
+    public String getTopicPath() {
+        return topicPath;
+    }
+
+    public void setTopicPath(String topicPath) {
+        this.topicPath = topicPath;
     }
 }

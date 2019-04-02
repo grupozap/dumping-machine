@@ -3,6 +3,14 @@ schemaRegistryUrl: 127.0.0.1:8081
 groupId: dumping-machine
 topics:
 - name: topic-1
+  type: S3Uploader
   bucketName: bucket-1
   bucketRegion: us-east-1
+  partitionForget: 3000
+- name: topic-2
+  type: HDFSUploader
+  hdfsURL: hdfs://hdfs-url/
+  topicPath: /topics/
+  coreSitePath: file://core-site.xml
+  hdfsSitePath: file://hdfs-site.xml
   partitionForget: 3000

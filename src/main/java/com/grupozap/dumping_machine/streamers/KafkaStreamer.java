@@ -3,7 +3,9 @@ package com.grupozap.dumping_machine.streamers;
 import com.grupozap.dumping_machine.config.ApplicationProperties;
 import com.grupozap.dumping_machine.config.TopicProperties;
 import com.grupozap.dumping_machine.streamers.kafka.TopicStreamer;
+import com.grupozap.dumping_machine.uploaders.HDFSUploader;
 import com.grupozap.dumping_machine.uploaders.S3Uploader;
+import com.grupozap.dumping_machine.uploaders.Uploader;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -29,8 +31,15 @@ public class KafkaStreamer {
 
     public void run() {
         for(TopicProperties topicProperty : topicProperties) {
-            S3Uploader s3Uploader = new S3Uploader(topicProperty.getBucketName(), topicProperty.getBucketRegion());
-            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, this.sessionTimeout, s3Uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget());
+            Uploader uploader;
+
+            if(topicProperty.getType().equals("HDFSUploader")) {
+                uploader = new HDFSUploader(topicProperty.getHdfsPath(), topicProperty.getCoreSitePath(), topicProperty.getHdfsSitePath(), topicProperty.getTopicPath());
+            } else {
+                uploader = new S3Uploader(topicProperty.getBucketName(), topicProperty.getBucketRegion());
+            }
+
+            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, this.sessionTimeout, uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget());
 
             this.pool.execute(topicStreamer);
         }
