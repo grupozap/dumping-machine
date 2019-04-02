@@ -58,8 +58,11 @@ public class TopicStreamer implements Runnable {
                 // Flush closed partitions
                 consumer.commitSync(hourlyBasedPartitioner.commitWriters());
             }
+        } catch (Exception e) {
+            logger.error("Topic: " + this.topic + " - Error on consumption");
+            e.printStackTrace();
         } finally {
-            logger.error("Topic: " + this.topic + " - Closing consumer");
+            logger.info("Topic: " + this.topic + " - Closing consumer");
             consumer.unsubscribe();
             consumer.close();
         }

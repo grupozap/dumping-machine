@@ -28,7 +28,8 @@ allprojects {
         compile group: 'io.confluent', name: 'kafka-avro-serializer', version: "${avroVersion}"
         compile group: 'com.google.code.gson', name: 'gson', version: "${gsonVersion}"
         compile group: 'org.slf4j', name: 'slf4j-log4j12', version: "${slf4jVersion}"
-        compile group: 'com.amazonaws', name: 'aws-java-sdk', version: "${awsJavaSdkVerion}"
+        compile group: 'com.amazonaws', name: 'aws-java-sdk', version: "${awsJavaSdkVersion}"
+        compile group: 'org.apache.hadoop', name: 'hadoop-client', version: "${hadoopClientVersion}"
     }
 
     sourceSets {

@@ -36,7 +36,7 @@ public class HourlyBasedPartitioner {
         this.partitionInfos = this.addOrUpdatePartitionInfo(this.partitionInfos, record);
     }
 
-    public Map<TopicPartition, OffsetAndMetadata> commitWriters() {
+    public Map<TopicPartition, OffsetAndMetadata> commitWriters() throws Exception {
         Map<TopicPartition, OffsetAndMetadata> topicPartitionOffsetAndMetadataMap = new HashMap<>();
         ArrayList<HourlyBasedRecordConsumer> closedHourlyBasedRecordConsumers = this.getClosedWriters();
 
@@ -146,7 +146,7 @@ public class HourlyBasedPartitioner {
         return true;
     }
 
-    private void closeWriter(HourlyBasedRecordConsumer hourlyBasedRecordConsumer) {
+    private void closeWriter(HourlyBasedRecordConsumer hourlyBasedRecordConsumer) throws Exception {
         hourlyBasedRecordConsumer.close();
 
         for(Map.Entry<String, String> entry : hourlyBasedRecordConsumer.getFilePaths().entrySet()) {
