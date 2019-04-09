@@ -2,11 +2,14 @@ package com.grupozap.dumping_machine.streamers;
 
 import com.grupozap.dumping_machine.config.ApplicationProperties;
 import com.grupozap.dumping_machine.config.TopicProperties;
+import com.grupozap.dumping_machine.deserializers.RecordType;
+import com.grupozap.dumping_machine.metastore.HiveClient;
 import com.grupozap.dumping_machine.streamers.kafka.TopicStreamer;
 import com.grupozap.dumping_machine.uploaders.HDFSUploader;
 import com.grupozap.dumping_machine.uploaders.S3Uploader;
 import com.grupozap.dumping_machine.uploaders.Uploader;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,9 +32,17 @@ public class KafkaStreamer {
         this.pool = Executors.newFixedThreadPool(topicProperties.size());
     }
 
-    public void run() {
+    public void run() throws Exception {
+
+
         for(TopicProperties topicProperty : topicProperties) {
             Uploader uploader;
+            HashMap<RecordType, String> hiveTables = new HashMap<>();
+            HiveClient hiveClient = new HiveClient(topicProperty.getHive().getUrl(), topicProperty.getHive().getUser(), topicProperty.getHive().getPassword());
+
+            hiveTables.put(RecordType.RECORD, topicProperty.getHive().getRecordTable());
+            hiveTables.put(RecordType.ERROR, topicProperty.getHive().getErrorTable());
+            hiveTables.put(RecordType.TOMBSTONE, topicProperty.getHive().getTombstoneTable());
 
             if(topicProperty.getType().equals("HDFSUploader")) {
                 uploader = new HDFSUploader(topicProperty.getHdfsPath(), topicProperty.getCoreSitePath(), topicProperty.getHdfsSitePath(), topicProperty.getTopicPath());
@@ -39,7 +50,7 @@ public class KafkaStreamer {
                 uploader = new S3Uploader(topicProperty.getBucketName(), topicProperty.getBucketRegion());
             }
 
-            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, this.sessionTimeout, uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget());
+            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, this.sessionTimeout, uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget(), hiveClient, hiveTables);
 
             this.pool.execute(topicStreamer);
         }

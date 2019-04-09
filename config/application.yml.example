@@ -7,6 +7,13 @@ topics:
   bucketName: bucket-1
   bucketRegion: us-east-1
   partitionForget: 3000
+  hive:
+      url: jdbc:hive2://localhost:10000/
+      user: user
+      password:
+      recordTable: schema.table
+      errorTable: schema.table_error
+      tombstoneTable: schema.table_tombstone
 - name: topic-2
   type: HDFSUploader
   hdfsURL: hdfs://hdfs-url/

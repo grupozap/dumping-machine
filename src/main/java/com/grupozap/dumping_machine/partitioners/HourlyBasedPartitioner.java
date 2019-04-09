@@ -1,7 +1,9 @@
 package com.grupozap.dumping_machine.partitioners;
 
 import com.grupozap.dumping_machine.consumers.HourlyBasedRecordConsumer;
+import com.grupozap.dumping_machine.deserializers.RecordType;
 import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
+import com.grupozap.dumping_machine.metastore.HiveClient;
 import com.grupozap.dumping_machine.uploaders.Uploader;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -18,13 +20,17 @@ public class HourlyBasedPartitioner {
 
     private final String topic;
     private final Uploader uploader;
+    private final HiveClient hiveClient;
     private final long partitionForget;
+    private final HashMap<RecordType, String> hiveTables;
 
     private final long waitFor = 300000;
 
-    public HourlyBasedPartitioner(String topic, Uploader uploader, long partitionForget) {
+    public HourlyBasedPartitioner(String topic, Uploader uploader, HiveClient hiveClient, long partitionForget, HashMap<RecordType, String> hiveTables) {
         this.topic = topic;
         this.uploader = uploader;
+        this.hiveClient = hiveClient;
+        this.hiveTables = hiveTables;
         this.partitionForget = partitionForget;
         this.writerPartitionInfos = new HashMap<>();
         this.partitionInfos = new ArrayList<>();
@@ -40,8 +46,8 @@ public class HourlyBasedPartitioner {
         Map<TopicPartition, OffsetAndMetadata> topicPartitionOffsetAndMetadataMap = new HashMap<>();
         ArrayList<HourlyBasedRecordConsumer> closedHourlyBasedRecordConsumers = this.getClosedWriters();
 
-        for(HourlyBasedRecordConsumer hourlyBasedRecordConsumer : closedHourlyBasedRecordConsumers) {
-            for(PartitionInfo partitionInfo : writerPartitionInfos.get(hourlyBasedRecordConsumer)) {
+        for (HourlyBasedRecordConsumer hourlyBasedRecordConsumer : closedHourlyBasedRecordConsumers) {
+            for (PartitionInfo partitionInfo : writerPartitionInfos.get(hourlyBasedRecordConsumer)) {
                 // TODO: Sort writers by creation time instead of ordering the result by offsets
                 if (topicPartitionOffsetAndMetadataMap.get(partitionInfo.getTopicPartition()) == null || topicPartitionOffsetAndMetadataMap.get(partitionInfo.getTopicPartition()).offset() < partitionInfo.getLastOffset()) {
                     topicPartitionOffsetAndMetadataMap.put(partitionInfo.getTopicPartition(), partitionInfo.getNextOffsetAndMetadata());
@@ -57,7 +63,7 @@ public class HourlyBasedPartitioner {
     }
 
     public void clearPartitions() {
-        for(HourlyBasedRecordConsumer hourlyBasedRecordConsumer : this.writerPartitionInfos.keySet()) {
+        for (HourlyBasedRecordConsumer hourlyBasedRecordConsumer : this.writerPartitionInfos.keySet()) {
             hourlyBasedRecordConsumer.close();
             hourlyBasedRecordConsumer.delete();
         }
@@ -74,13 +80,13 @@ public class HourlyBasedPartitioner {
         HourlyBasedRecordConsumer recordHourlyBasedRecordConsumer = null;
         ArrayList<PartitionInfo> localPartitionInfos = new ArrayList<>();
 
-        for(HourlyBasedRecordConsumer hourlyBasedRecordConsumer : localWriterPartitionInfos.keySet()) {
-            if(hourlyBasedRecordConsumer.getMinTimestamp() <= record.getTimestamp() && record.getTimestamp() <= hourlyBasedRecordConsumer.getMaxTimestamp()) {
+        for (HourlyBasedRecordConsumer hourlyBasedRecordConsumer : localWriterPartitionInfos.keySet()) {
+            if (hourlyBasedRecordConsumer.getMinTimestamp() <= record.getTimestamp() && record.getTimestamp() <= hourlyBasedRecordConsumer.getMaxTimestamp()) {
                 recordHourlyBasedRecordConsumer = hourlyBasedRecordConsumer;
             }
         }
 
-        if(recordHourlyBasedRecordConsumer == null) {
+        if (recordHourlyBasedRecordConsumer == null) {
             recordHourlyBasedRecordConsumer = new HourlyBasedRecordConsumer(this.topic, record.getPartition(), record.getOffset(), record.getTimestamp());
         } else {
             localPartitionInfos = localWriterPartitionInfos.get(recordHourlyBasedRecordConsumer);
@@ -101,13 +107,13 @@ public class HourlyBasedPartitioner {
         Integer partitionIndex = null;
         PartitionInfo partitionInfo;
 
-        for(PartitionInfo partition : localPartitionInfos) {
-            if(partition.getPartition() == record.getPartition()) {
+        for (PartitionInfo partition : localPartitionInfos) {
+            if (partition.getPartition() == record.getPartition()) {
                 partitionIndex = localPartitionInfos.indexOf(partition);
             }
         }
 
-        if(partitionIndex == null) {
+        if (partitionIndex == null) {
             logger.info("Topic: " + this.topic + " - Appending partition " + record.getPartition());
             partitionInfo = new PartitionInfo(this.topic, record.getPartition(), record.getOffset());
             localPartitionInfos.add(partitionInfo);
@@ -125,8 +131,8 @@ public class HourlyBasedPartitioner {
     private ArrayList<HourlyBasedRecordConsumer> getClosedWriters() {
         ArrayList<HourlyBasedRecordConsumer> removedHourlyBasedRecordConsumers = new ArrayList<>();
 
-        for(Map.Entry<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> entry : this.writerPartitionInfos.entrySet()) {
-            if((arePartitionsClosed(entry.getValue()) && entry.getKey().getUpdateTimestamp() + this.waitFor < System.currentTimeMillis()) || entry.getKey().getUpdateTimestamp() + this.partitionForget < System.currentTimeMillis()) {
+        for (Map.Entry<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> entry : this.writerPartitionInfos.entrySet()) {
+            if ((arePartitionsClosed(entry.getValue()) && entry.getKey().getUpdateTimestamp() + this.waitFor < System.currentTimeMillis()) || entry.getKey().getUpdateTimestamp() + this.partitionForget < System.currentTimeMillis()) {
                 removedHourlyBasedRecordConsumers.add(entry.getKey());
             }
         }
@@ -135,8 +141,8 @@ public class HourlyBasedPartitioner {
     }
 
     private boolean arePartitionsClosed(ArrayList<PartitionInfo> partitions) {
-        for(PartitionInfo partitionInfo : partitions) {
-            for(PartitionInfo partitionerPartitionInfo : this.partitionInfos) {
+        for (PartitionInfo partitionInfo : partitions) {
+            for (PartitionInfo partitionerPartitionInfo : this.partitionInfos) {
                 if (partitionerPartitionInfo.getPartition() == partitionInfo.getPartition() && partitionerPartitionInfo.getLastOffset() <= partitionInfo.getLastOffset()) {
                     return false;
                 }
@@ -149,12 +155,39 @@ public class HourlyBasedPartitioner {
     private void closeWriter(HourlyBasedRecordConsumer hourlyBasedRecordConsumer) throws Exception {
         hourlyBasedRecordConsumer.close();
 
-        for(Map.Entry<String, String> entry : hourlyBasedRecordConsumer.getFilePaths().entrySet()) {
-            logger.info("Topic: " + this.topic + " - Uploading hourlyBasedRecordConsumer for " + this.topic + " path " + entry.getValue());
+        for (Map.Entry<RecordType, HashMap<String, String>> entry : hourlyBasedRecordConsumer.getFilePaths().entrySet()) {
+            for (Map.Entry<String, String> path : entry.getValue().entrySet()) {
 
-            this.uploader.upload(entry.getValue(), entry.getKey());
+                String hiveTable = hiveTables.get(entry.getKey());
+
+                if (hiveTable != null)
+                    addPartitionHive(hiveTable, path.getValue());
+
+                logger.info("Topic: " + this.topic + " - Uploading hourlyBasedRecordConsumer for " + this.topic + " path " + path.getValue());
+
+                this.uploader.upload(path.getValue(), path.getKey());
+            }
         }
 
         hourlyBasedRecordConsumer.delete();
+    }
+
+    private void addPartitionHive(String table, String path) throws Exception {
+        String[] key_split = path.split("/");
+        String partition = this.formatPartition(Arrays.copyOfRange(key_split, 2,4));
+        String location = key_split[2] + "/" + key_split[3] + "/";
+
+        hiveClient.addPartition(table, location, partition);
+    }
+
+    private String formatPartition(String[] partitions) {
+        StringBuilder partition = new StringBuilder();
+
+        for(String i : partitions) {
+            String[] parts = i.split("=");
+            String partTemp = parts[0] + "='" + parts[1] + "',";
+            partition.append(partTemp);
+        }
+        return partition.substring(0, partition.length() - 1);
     }
 }
