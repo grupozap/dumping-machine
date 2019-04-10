@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 
 public class HourlyBasedRecordConsumer implements RecordConsumer {
     private final Logger logger = LoggerFactory.getLogger(HourlyBasedRecordConsumer.class);
@@ -122,16 +123,18 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
         return recordWriter;
     }
 
-    public HashMap<String, String> getFilePaths() {
+    public HashMap<RecordType, HashMap<String, String>> getFilePaths() {
         HashMap<String, String> filePaths = new HashMap<>();
+        HashMap<RecordType, HashMap<String, String>> recordTypePaths = new HashMap<>();
 
-        for(RecordWriter recordWriter : recordWriters.values()) {
+        for(Map.Entry<RecordType, RecordWriter> recordWriter : recordWriters.entrySet()) {
             filePaths.put(
-                    recordWriter.getPath() + recordWriter.getFilename(),
-                    recordWriter.getPath().replaceFirst(this.localPath, "") + recordWriter.getFilename()
+                    recordWriter.getValue().getPath() + recordWriter.getValue().getFilename(),
+                    recordWriter.getValue().getPath().replaceFirst(this.localPath, "") + recordWriter.getValue().getFilename()
             );
+            recordTypePaths.put(recordWriter.getKey(), filePaths);
         }
 
-        return filePaths;
+        return recordTypePaths;
     }
 }

@@ -1,6 +1,6 @@
 # Dumping Machine
 
-> Dumping Machine is an application which dumps Kafka Avro topics to S3 as Parquet.
+> Dumping Machine is an application which dumps Kafka Avro topics to S3 or HDFS as Parquet.
 
 ---
 

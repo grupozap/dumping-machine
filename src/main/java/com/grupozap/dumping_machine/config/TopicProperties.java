@@ -12,6 +12,7 @@ public class TopicProperties {
     private String hdfsSitePath;
     private Long poolTimeout;
     private Long partitionForget;
+    private HiveProperties hive;
 
     public String getUploaderClass() {
         return uploaderClass;
@@ -103,5 +104,13 @@ public class TopicProperties {
 
     public void setTopicPath(String topicPath) {
         this.topicPath = topicPath;
+    }
+
+    public HiveProperties getHive() {
+        return hive;
+    }
+
+    public void setHive(HiveProperties hive) {
+        this.hive = hive;
     }
 }
