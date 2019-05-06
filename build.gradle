@@ -30,6 +30,8 @@ allprojects {
         compile group: 'org.slf4j', name: 'slf4j-log4j12', version: "${slf4jVersion}"
         compile group: 'com.amazonaws', name: 'aws-java-sdk', version: "${awsJavaSdkVersion}"
         compile group: 'org.apache.hadoop', name: 'hadoop-client', version: "${hadoopClientVersion}"
+        compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${log4jCore}"
+        compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: "${jacksonDatabind}"
         compile(group: 'org.apache.hive', name: 'hive-jdbc', version: "${hiveJdbcVersion}") {
             exclude group: 'org.apache.zookeeper', module: 'zookeeper'
             exclude group: 'org.apache.hadoop', module: 'hadoop-common'

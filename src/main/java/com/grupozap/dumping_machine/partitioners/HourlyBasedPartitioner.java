@@ -10,6 +10,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 
 public class HourlyBasedPartitioner {
@@ -36,10 +37,13 @@ public class HourlyBasedPartitioner {
         this.partitionInfos = new ArrayList<>();
     }
 
-    public void consume(AvroExtendedMessage record) {
-        this.writerPartitionInfos = this.addOrUpdateWriter(this.writerPartitionInfos, record);
+    public void consume(AvroExtendedMessage record) throws IOException {
 
-        this.partitionInfos = this.addOrUpdatePartitionInfo(this.partitionInfos, record);
+        if (validateDuplicateMessage(this.partitionInfos, record)) {
+            this.writerPartitionInfos = this.addOrUpdateWriter(this.writerPartitionInfos, record);
+
+            this.partitionInfos = this.addOrUpdatePartitionInfo(this.partitionInfos, record);
+        }
     }
 
     public Map<TopicPartition, OffsetAndMetadata> commitWriters() throws Exception {
@@ -62,7 +66,7 @@ public class HourlyBasedPartitioner {
         return topicPartitionOffsetAndMetadataMap;
     }
 
-    public void clearPartitions() {
+    public void clearPartitions() throws IOException {
         for (HourlyBasedRecordConsumer hourlyBasedRecordConsumer : this.writerPartitionInfos.keySet()) {
             hourlyBasedRecordConsumer.close();
             hourlyBasedRecordConsumer.delete();
@@ -76,7 +80,7 @@ public class HourlyBasedPartitioner {
         return this.partitionInfos;
     }
 
-    private HashMap<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> addOrUpdateWriter(HashMap<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> localWriterPartitionInfos, AvroExtendedMessage record) {
+    private HashMap<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> addOrUpdateWriter(HashMap<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> localWriterPartitionInfos, AvroExtendedMessage record) throws IOException {
         HourlyBasedRecordConsumer recordHourlyBasedRecordConsumer = null;
         ArrayList<PartitionInfo> localPartitionInfos = new ArrayList<>();
 
@@ -189,5 +193,28 @@ public class HourlyBasedPartitioner {
             partition.append(partTemp);
         }
         return partition.substring(0, partition.length() - 1);
+    }
+
+    private boolean validateDuplicateMessage(ArrayList<PartitionInfo> localPartitionInfos, AvroExtendedMessage record){
+        Integer partitionIndex = null;
+        PartitionInfo partitionInfo;
+
+        for (PartitionInfo partition : localPartitionInfos) {
+            if (partition.getPartition() == record.getPartition()) {
+                partitionIndex = localPartitionInfos.indexOf(partition);
+            }
+        }
+
+        if (partitionIndex == null) {
+            return true;
+        } else {
+            partitionInfo = localPartitionInfos.get(partitionIndex);
+
+            if(partitionInfo.getLastOffset() >= record.getOffset()) {
+                logger.warn("Topic: " + this.topic + " - Message from partition " + record.getPartition() +  " with offset " + record.getOffset() + " less than the last offset " + partitionInfo.getLastOffset());
+                return false;
+            }
+        }
+        return true;
     }
 }

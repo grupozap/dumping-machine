@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -37,7 +38,7 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
     }
 
     @Override
-    public void write(AvroExtendedMessage record) {
+    public void write(AvroExtendedMessage record) throws IOException {
         RecordWriter recordWriter = recordWriters.get(record.getType());
 
         if(recordWriter == null) {
@@ -54,14 +55,14 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         for(RecordWriter recordWriter : this.recordWriters.values()) {
             recordWriter.close();
         }
     }
 
     @Override
-    public void delete() {
+    public void delete() throws IOException {
         for(RecordWriter recordWriter : this.recordWriters.values()) {
             recordWriter.close();
             new File(recordWriter.getPath() + recordWriter.getFilename()).delete();
@@ -108,7 +109,7 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
         return cal.getTimeInMillis();
     }
 
-    private RecordWriter createFile(Schema schema, RecordType recordType) {
+    private RecordWriter createFile(Schema schema, RecordType recordType) throws IOException {
         int pageSize = 64 * 1024;
         int blockSize = 256 * 1024 * 1024;
 
