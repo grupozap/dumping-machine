@@ -2,6 +2,8 @@ package com.grupozap.dumping_machine;
 
 import com.grupozap.dumping_machine.config.ApplicationProperties;
 import com.grupozap.dumping_machine.streamers.KafkaStreamer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -11,6 +13,7 @@ import java.nio.file.Paths;
 
 class Application {
     public static void main(String[] args) throws Exception {
+        Logger logger = LoggerFactory.getLogger(Application.class);
         String properties = System.getProperty("config");
 
         if( properties == null ) {
@@ -24,7 +27,7 @@ class Application {
         try( InputStream in = Files.newInputStream( Paths.get( properties ) ) ) {
             applicationProperties = yaml.loadAs( in, ApplicationProperties.class );
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Config error.", e);
         }
 
         KafkaStreamer kafkaStreamer = new KafkaStreamer(applicationProperties);

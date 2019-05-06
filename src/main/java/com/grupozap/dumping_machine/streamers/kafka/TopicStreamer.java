@@ -13,6 +13,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 
 public class TopicStreamer implements Runnable {
@@ -65,8 +66,7 @@ public class TopicStreamer implements Runnable {
                 consumer.commitSync(hourlyBasedPartitioner.commitWriters());
             }
         } catch (Exception e) {
-            logger.error("Topic: " + this.topic + " - Error on consumption");
-            e.printStackTrace();
+            logger.error("Topic: " + this.topic + " - Error on consumption. Message: " + e.getMessage(), e);
         } finally {
             logger.info("Topic: " + this.topic + " - Closing consumer");
             consumer.unsubscribe();
@@ -123,7 +123,11 @@ public class TopicStreamer implements Runnable {
             } else { // If this is a rebalancing
                 logger.info("Topic: " + this.topic + " - Cleaning for rebalance");
 
-                hourlyBasedPartitioner.clearPartitions();
+                try {
+                    hourlyBasedPartitioner.clearPartitions();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
