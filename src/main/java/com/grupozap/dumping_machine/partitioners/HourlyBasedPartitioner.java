@@ -38,7 +38,6 @@ public class HourlyBasedPartitioner {
     }
 
     public void consume(AvroExtendedMessage record) throws IOException {
-
         if (validateDuplicateMessage(this.partitionInfos, record)) {
             this.writerPartitionInfos = this.addOrUpdateWriter(this.writerPartitionInfos, record);
 
@@ -91,7 +90,7 @@ public class HourlyBasedPartitioner {
         }
 
         if (recordHourlyBasedRecordConsumer == null) {
-            recordHourlyBasedRecordConsumer = new HourlyBasedRecordConsumer(this.topic, record.getPartition(), record.getOffset(), record.getTimestamp());
+            recordHourlyBasedRecordConsumer = new HourlyBasedRecordConsumer(this.topic, record.getTimestamp());
         } else {
             localPartitionInfos = localWriterPartitionInfos.get(recordHourlyBasedRecordConsumer);
         }
