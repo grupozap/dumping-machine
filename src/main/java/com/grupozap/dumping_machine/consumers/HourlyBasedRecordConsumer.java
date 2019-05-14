@@ -13,25 +13,22 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
 
 public class HourlyBasedRecordConsumer implements RecordConsumer {
     private final Logger logger = LoggerFactory.getLogger(HourlyBasedRecordConsumer.class);
 
-    private HashMap<RecordType, RecordWriter> recordWriters;
+    private HashMap<Schema, RecordWriter> recordWriters;
+    private RecordWriter tombstoneWriter;
+    private RecordWriter errorWriter;
 
     private final String localPath = "./tmp/parquet/";
 
     private final String topic;
-    private final int partition;
-    private final long offset;
     private final long firstTimestamp;
     private long updateTimestamp;
 
-    public HourlyBasedRecordConsumer(String topic, int partition, long offset, long firstTimestamp) {
+    public HourlyBasedRecordConsumer(String topic, long firstTimestamp) {
         this.topic = topic;
-        this.partition = partition;
-        this.offset = offset;
         this.firstTimestamp = firstTimestamp;
         this.updateTimestamp = System.currentTimeMillis();
         this.recordWriters = new HashMap<>();
@@ -39,17 +36,33 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
 
     @Override
     public void write(AvroExtendedMessage record) throws IOException {
-        RecordWriter recordWriter = recordWriters.get(record.getType());
+        RecordType recordType = record.getType();
+        RecordWriter recordWriter;
 
-        if(recordWriter == null) {
-            logger.info("Topic: " + this.topic + " - Opening file for partition " + record.getPartition() + " and type " + record.getType());
+        if(recordType == RecordType.TOMBSTONE) {
+            if(tombstoneWriter == null) {
+                tombstoneWriter = createFile(record.getSchema(), record.getType(), record.getPartition(), record.getOffset());
+            }
 
-            recordWriter = createFile(record.getSchema(), record.getType());
+            recordWriter = tombstoneWriter;
+        } else if (recordType == RecordType.ERROR) {
+            if(errorWriter == null) {
+                errorWriter = createFile(record.getSchema(), record.getType(), record.getPartition(), record.getOffset());
+            }
+
+            recordWriter = errorWriter;
+        } else {
+            // TODO: We must validate the schema before adding a new file
+            recordWriter = recordWriters.get(record.getSchema());
+
+            if(recordWriter == null) {
+                recordWriter = createFile(record.getSchema(), record.getType(), record.getPartition(), record.getOffset());
+            }
+
+            recordWriters.put(record.getSchema(), recordWriter);
         }
 
         recordWriter.write(record.getRecord());
-
-        recordWriters.put(record.getType(), recordWriter);
 
         this.updateTimestamp = System.currentTimeMillis();
     }
@@ -109,7 +122,9 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
         return cal.getTimeInMillis();
     }
 
-    private RecordWriter createFile(Schema schema, RecordType recordType) throws IOException {
+    private RecordWriter createFile(Schema schema, RecordType recordType, int partition, long offset) throws IOException {
+        logger.info("Topic: " + this.topic + " - Opening file for partition " + partition + " and type " + recordType);
+
         int pageSize = 64 * 1024;
         int blockSize = 256 * 1024 * 1024;
 
@@ -125,15 +140,41 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
     }
 
     public HashMap<RecordType, HashMap<String, String>> getFilePaths() {
-        HashMap<String, String> filePaths = new HashMap<>();
         HashMap<RecordType, HashMap<String, String>> recordTypePaths = new HashMap<>();
 
-        for(Map.Entry<RecordType, RecordWriter> recordWriter : recordWriters.entrySet()) {
-            filePaths.put(
-                    recordWriter.getValue().getPath() + recordWriter.getValue().getFilename(),
-                    recordWriter.getValue().getPath().replaceFirst(this.localPath, "") + recordWriter.getValue().getFilename()
+        if(!recordWriters.isEmpty()) {
+            HashMap<String, String> filePaths = new HashMap<>();
+
+            for(RecordWriter recordWriter : recordWriters.values()) {
+                filePaths.put(
+                        recordWriter.getPath() + recordWriter.getFilename(),
+                        recordWriter.getPath().replaceFirst(this.localPath, "") + recordWriter.getFilename()
+                );
+            }
+
+            recordTypePaths.put(RecordType.RECORD, filePaths);
+        }
+
+        if(tombstoneWriter != null) {
+            HashMap<String, String> tombstoneWriterFilePath = new HashMap<>();
+
+            tombstoneWriterFilePath.put(
+                    tombstoneWriter.getPath() + tombstoneWriter.getFilename(),
+                    tombstoneWriter.getPath().replaceFirst(this.localPath, "") + tombstoneWriter.getFilename()
             );
-            recordTypePaths.put(recordWriter.getKey(), filePaths);
+
+            recordTypePaths.put(RecordType.TOMBSTONE, tombstoneWriterFilePath);
+        }
+
+        if(errorWriter != null) {
+            HashMap<String, String> errorWriterFilePath = new HashMap<>();
+
+            errorWriterFilePath.put(
+                    errorWriter.getPath() + errorWriter.getFilename(),
+                    errorWriter.getPath().replaceFirst(this.localPath, "") + errorWriter.getFilename()
+            );
+
+            recordTypePaths.put(RecordType.ERROR, errorWriterFilePath);
         }
 
         return recordTypePaths;
