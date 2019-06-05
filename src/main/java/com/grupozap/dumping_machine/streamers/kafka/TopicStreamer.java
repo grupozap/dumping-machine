@@ -56,7 +56,7 @@ public class TopicStreamer implements Runnable {
             while (true) {
                 records = consumer.poll(this.poolTimeout);
 
-                logger.info("Topic: " + this.topic + " - Consuming " + records.count() + " records");
+                logger.trace("Topic: " + this.topic + " - Consuming " + records.count() + " records");
 
                 for (ConsumerRecord<String, GenericRecord> record : records) {
                     hourlyBasedPartitioner.consume(new AvroExtendedMessage(record));
