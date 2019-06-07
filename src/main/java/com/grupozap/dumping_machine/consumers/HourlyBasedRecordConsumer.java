@@ -72,16 +72,38 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
         for(RecordWriter recordWriter : this.recordWriters.values()) {
             recordWriter.close();
         }
+
+        if(tombstoneWriter != null) {
+            tombstoneWriter.close();
+        }
+
+        if(errorWriter != null) {
+            errorWriter.close();
+        }
     }
 
     @Override
     public void delete() throws IOException {
         for(RecordWriter recordWriter : this.recordWriters.values()) {
-            recordWriter.close();
-            new File(recordWriter.getPath() + recordWriter.getFilename()).delete();
+            deleteWriter(recordWriter);
         }
 
         this.recordWriters = new HashMap<>();
+
+        if(tombstoneWriter != null) {
+            deleteWriter(tombstoneWriter);
+            this.tombstoneWriter = null;
+        }
+
+        if(errorWriter != null) {
+            deleteWriter(errorWriter);
+            this.errorWriter = null;
+        }
+    }
+
+    private void deleteWriter(RecordWriter writer) throws IOException {
+        writer.close();
+        new File(writer.getPath() + writer.getFilename()).delete();
     }
 
     public long getFirstTimestamp() {
@@ -123,15 +145,18 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
     }
 
     private RecordWriter createFile(Schema schema, RecordType recordType, int partition, long offset) throws IOException {
-        logger.info("Topic: " + this.topic + " - Opening file for partition " + partition + " and type " + recordType);
+        String localPartitionPath = this.localPath + this.topic + "/" + recordType.toString().toLowerCase() + "/" + this.getPartitionPath();
+        String fileName = partition + "_" + offset + ".parquet";
+
+        logger.info("Topic: " + this.topic + " - Opening file " + localPartitionPath + fileName + " for partition " + partition + " and type " + recordType);
 
         int pageSize = 64 * 1024;
         int blockSize = 256 * 1024 * 1024;
 
         RecordWriter recordWriter = new RecordWriter(
                 schema,
-                this.localPath + this.topic + "/" + recordType.toString().toLowerCase() + "/" + this.getPartitionPath(),
-                partition + "_" + offset + ".parquet",
+                localPartitionPath,
+                fileName,
                 blockSize,
                 pageSize
         );
