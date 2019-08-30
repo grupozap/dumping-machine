@@ -1,0 +1,66 @@
+version: 2
+jobs:
+  push-master:
+    machine:
+      image: circleci/classic:latest
+
+    steps:
+      - checkout
+      - run:
+          name: Docker push master branch 
+          command: |
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker build -t vivareal/${IMAGE}:master .
+            docker push vivareal/${IMAGE}:master
+  
+  build-test:
+    machine:
+      image: circleci/classic:latest
+
+    steps:
+      - checkout
+      - run:
+          name: Docker push master branch 
+          command: |
+            docker build -t vivareal/${IMAGE}:local .
+
+  push-tag:
+    machine:
+      image: circleci/classic:latest
+
+    steps:
+      - checkout
+      - run: 
+          name: Docker push tag image
+          command: |
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker build -t vivareal/${IMAGE} .
+            docker tag vivareal/${IMAGE} vivareal/${IMAGE}:${CIRCLE_TAG}
+            docker push vivareal/${IMAGE}:${CIRCLE_TAG}
+            docker push vivareal/${IMAGE}
+
+workflows:
+  version: 2
+  push-master:
+    jobs:
+      - push-master:
+          context: docker-access
+          filters:
+            branches:
+              only: master
+      - build-test:
+          context: docker-access
+          filters:
+            branches:
+              ignore:
+                - master
+            
+  push-tag:
+    jobs:
+      - push-tag:
+          context: docker-access
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+(\.[0-9]+)+(-\D+)*/

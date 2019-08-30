@@ -4,7 +4,9 @@ import com.grupozap.dumping_machine.consumers.HourlyBasedRecordConsumer;
 import com.grupozap.dumping_machine.deserializers.RecordType;
 import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
 import com.grupozap.dumping_machine.metastore.HiveClient;
+import com.grupozap.dumping_machine.metastore.HiveUtil;
 import com.grupozap.dumping_machine.uploaders.Uploader;
+import org.apache.avro.Schema;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -21,18 +23,18 @@ public class HourlyBasedPartitioner {
 
     private final String topic;
     private final Uploader uploader;
-    private final HiveClient hiveClient;
     private final long partitionForget;
+    private final String metaStoreUris;
     private final HashMap<RecordType, String> hiveTables;
 
     private final long waitFor = 300000;
 
-    public HourlyBasedPartitioner(String topic, Uploader uploader, HiveClient hiveClient, long partitionForget, HashMap<RecordType, String> hiveTables) {
+    public HourlyBasedPartitioner(String topic, Uploader uploader, long partitionForget, String metaStoreUris, HashMap<RecordType, String> hiveTables) {
         this.topic = topic;
         this.uploader = uploader;
-        this.hiveClient = hiveClient;
         this.hiveTables = hiveTables;
         this.partitionForget = partitionForget;
+        this.metaStoreUris = metaStoreUris;
         this.writerPartitionInfos = new HashMap<>();
         this.partitionInfos = new ArrayList<>();
     }
@@ -163,8 +165,12 @@ public class HourlyBasedPartitioner {
 
                 String hiveTable = hiveTables.get(entry.getKey());
 
-                if (hiveTable != null)
-                    addPartitionHive(hiveTable, path.getValue());
+                Schema schema = hourlyBasedRecordConsumer.getSchema(path.getKey());
+
+                if (hiveTable != null) {
+                    HiveClient hiveClient = new HiveClient(this.metaStoreUris);
+                    HiveUtil.updateHive(hiveClient, hiveTable, schema, path.getValue(), this.uploader.getServerPath());
+                }
 
                 logger.info("Topic: " + this.topic + " - Uploading hourlyBasedRecordConsumer for " + this.topic + " path " + path.getValue());
 
@@ -173,25 +179,6 @@ public class HourlyBasedPartitioner {
         }
 
         hourlyBasedRecordConsumer.delete();
-    }
-
-    private void addPartitionHive(String table, String path) throws Exception {
-        String[] key_split = path.split("/");
-        String partition = this.formatPartition(Arrays.copyOfRange(key_split, 2,4));
-        String location = key_split[2] + "/" + key_split[3] + "/";
-
-        hiveClient.addPartition(table, location, partition);
-    }
-
-    private String formatPartition(String[] partitions) {
-        StringBuilder partition = new StringBuilder();
-
-        for(String i : partitions) {
-            String[] parts = i.split("=");
-            String partTemp = parts[0] + "='" + parts[1] + "',";
-            partition.append(partTemp);
-        }
-        return partition.substring(0, partition.length() - 1);
     }
 
     private boolean validateDuplicateMessage(ArrayList<PartitionInfo> localPartitionInfos, AvroExtendedMessage record){

@@ -18,6 +18,7 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
     private final Logger logger = LoggerFactory.getLogger(HourlyBasedRecordConsumer.class);
 
     private HashMap<Schema, RecordWriter> recordWriters;
+    private HashMap<String, Schema> pathSchemas;
     private RecordWriter tombstoneWriter;
     private RecordWriter errorWriter;
 
@@ -32,6 +33,7 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
         this.firstTimestamp = firstTimestamp;
         this.updateTimestamp = System.currentTimeMillis();
         this.recordWriters = new HashMap<>();
+        this.pathSchemas = new HashMap<>();
     }
 
     @Override
@@ -39,15 +41,17 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
         RecordType recordType = record.getType();
         RecordWriter recordWriter;
 
-        if(recordType == RecordType.TOMBSTONE) {
-            if(tombstoneWriter == null) {
+        if (recordType == RecordType.TOMBSTONE) {
+            if (tombstoneWriter == null) {
                 tombstoneWriter = createFile(record.getSchema(), record.getType(), record.getPartition(), record.getOffset());
+                pathSchemas.put(tombstoneWriter.getPath() + tombstoneWriter.getFilename(), record.getSchema());
             }
 
             recordWriter = tombstoneWriter;
         } else if (recordType == RecordType.ERROR) {
-            if(errorWriter == null) {
+            if (errorWriter == null) {
                 errorWriter = createFile(record.getSchema(), record.getType(), record.getPartition(), record.getOffset());
+                pathSchemas.put(errorWriter.getPath() + errorWriter.getFilename(), record.getSchema());
             }
 
             recordWriter = errorWriter;
@@ -55,8 +59,9 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
             // TODO: We must validate the schema before adding a new file
             recordWriter = recordWriters.get(record.getSchema());
 
-            if(recordWriter == null) {
+            if (recordWriter == null) {
                 recordWriter = createFile(record.getSchema(), record.getType(), record.getPartition(), record.getOffset());
+                pathSchemas.put(recordWriter.getPath() + recordWriter.getFilename(), record.getSchema());
             }
 
             recordWriters.put(record.getSchema(), recordWriter);
@@ -69,36 +74,39 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
 
     @Override
     public void close() throws IOException {
-        for(RecordWriter recordWriter : this.recordWriters.values()) {
+        for (RecordWriter recordWriter : this.recordWriters.values()) {
             recordWriter.close();
         }
 
-        if(tombstoneWriter != null) {
+        if (tombstoneWriter != null) {
             tombstoneWriter.close();
         }
 
-        if(errorWriter != null) {
+        if (errorWriter != null) {
             errorWriter.close();
         }
+
     }
 
     @Override
     public void delete() throws IOException {
-        for(RecordWriter recordWriter : this.recordWriters.values()) {
+        for (RecordWriter recordWriter : this.recordWriters.values()) {
             deleteWriter(recordWriter);
         }
 
         this.recordWriters = new HashMap<>();
 
-        if(tombstoneWriter != null) {
+        if (tombstoneWriter != null) {
             deleteWriter(tombstoneWriter);
             this.tombstoneWriter = null;
         }
 
-        if(errorWriter != null) {
+        if (errorWriter != null) {
             deleteWriter(errorWriter);
             this.errorWriter = null;
         }
+
+        this.pathSchemas = new HashMap<>();
     }
 
     private void deleteWriter(RecordWriter writer) throws IOException {
@@ -167,10 +175,10 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
     public HashMap<RecordType, HashMap<String, String>> getFilePaths() {
         HashMap<RecordType, HashMap<String, String>> recordTypePaths = new HashMap<>();
 
-        if(!recordWriters.isEmpty()) {
+        if (!recordWriters.isEmpty()) {
             HashMap<String, String> filePaths = new HashMap<>();
 
-            for(RecordWriter recordWriter : recordWriters.values()) {
+            for (RecordWriter recordWriter : recordWriters.values()) {
                 filePaths.put(
                         recordWriter.getPath() + recordWriter.getFilename(),
                         recordWriter.getPath().replaceFirst(this.localPath, "") + recordWriter.getFilename()
@@ -180,7 +188,7 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
             recordTypePaths.put(RecordType.RECORD, filePaths);
         }
 
-        if(tombstoneWriter != null) {
+        if (tombstoneWriter != null) {
             HashMap<String, String> tombstoneWriterFilePath = new HashMap<>();
 
             tombstoneWriterFilePath.put(
@@ -191,7 +199,7 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
             recordTypePaths.put(RecordType.TOMBSTONE, tombstoneWriterFilePath);
         }
 
-        if(errorWriter != null) {
+        if (errorWriter != null) {
             HashMap<String, String> errorWriterFilePath = new HashMap<>();
 
             errorWriterFilePath.put(
@@ -203,5 +211,9 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
         }
 
         return recordTypePaths;
+    }
+
+    public Schema getSchema(String path) {
+        return this.pathSchemas.get(path);
     }
 }
