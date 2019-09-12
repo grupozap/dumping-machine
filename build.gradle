@@ -6,18 +6,20 @@ buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url 'http://packages.confluent.io/maven/' }
+        maven { url 'http://packages.confluent.io/maven/'}
+        maven { url 'http://conjars.org/repo/'}
     }
 }
 
 allprojects {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 
     repositories {
         mavenLocal()
         mavenCentral()
         maven { url "http://packages.confluent.io/maven/" }
+        maven { url 'http://conjars.org/repo/'}
     }
 
     dependencies {
@@ -32,12 +34,13 @@ allprojects {
         compile group: 'org.apache.hadoop', name: 'hadoop-client', version: "${hadoopClientVersion}"
         compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${log4jCore}"
         compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: "${jacksonDatabind}"
-        compile(group: 'org.apache.hive', name: 'hive-jdbc', version: "${hiveJdbcVersion}") {
+        compile(group: 'org.apache.hive', name: 'hive-metastore', version: "${hiveVersion}") {
             exclude group: 'org.apache.zookeeper', module: 'zookeeper'
-            exclude group: 'org.apache.hadoop', module: 'hadoop-common'
-            exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-core'
-            exclude group: 'org.apache.hadoop', module: 'hadoop-hdfs'
         }
+        compile(group: 'org.apache.hive', name: 'hive-exec', version: "${hiveVersion}", classifier: 'core') {
+            exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+        }
+        compile fileTree(dir: 'libs', include: ['*.jar'])
     }
 
     sourceSets {
@@ -62,7 +65,7 @@ allprojects {
     jar {
         manifest {
             attributes(
-                    'Main-Class': 'com.grupozap.dumping_machine.Application'
+                'Main-Class': 'com.grupozap.dumping_machine.Application'
             )
         }
     }

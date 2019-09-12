@@ -43,7 +43,12 @@ public class ApplicationProperties {
     }
 
     public Integer getSessionTimeout() {
-        return Objects.requireNonNullElse(sessionTimeout, 30000);
+
+        if(sessionTimeout != null){
+            return sessionTimeout;
+        } else {
+            return 30000;
+        }
     }
 
     public void setSessionTimeout(Integer sessionTimeout) {

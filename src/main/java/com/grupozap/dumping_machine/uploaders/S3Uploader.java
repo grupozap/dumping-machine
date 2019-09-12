@@ -10,6 +10,7 @@ import java.io.File;
 public class S3Uploader implements Uploader {
     private final String bucketName;
     private final String bucketRegion;
+    private final static String TYPE = "s3a";
 
     public S3Uploader(String bucketName, String bucketRegion) {
         this.bucketName = bucketName;
@@ -23,5 +24,8 @@ public class S3Uploader implements Uploader {
                 .build();
 
         s3Client.putObject(new PutObjectRequest(this.bucketName, remotePath, new File(filename)));
+    }
+    public String getServerPath() {
+        return TYPE + "://" + bucketName;
     }
 }

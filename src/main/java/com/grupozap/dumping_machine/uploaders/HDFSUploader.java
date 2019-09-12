@@ -41,4 +41,8 @@ public class HDFSUploader implements Uploader {
             IOUtils.closeStream(is);
         }
     }
+
+    public String getServerPath() {
+        return  hdfsPath + topicPath.replace("/", "");
+    }
 }
