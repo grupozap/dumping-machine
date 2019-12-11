@@ -167,14 +167,14 @@ public class HourlyBasedPartitioner {
 
                 Schema schema = hourlyBasedRecordConsumer.getSchema(path.getKey());
 
+                logger.info("Topic: " + this.topic + " - Uploading hourlyBasedRecordConsumer for " + this.topic + " path " + path.getValue());
+
+                this.uploader.upload(path.getValue(), path.getKey());
+
                 if (hiveTable != null) {
                     HiveClient hiveClient = new HiveClient(this.metaStoreUris);
                     HiveUtil.updateHive(hiveClient, hiveTable, schema, path.getValue(), this.uploader.getServerPath());
                 }
-
-                logger.info("Topic: " + this.topic + " - Uploading hourlyBasedRecordConsumer for " + this.topic + " path " + path.getValue());
-
-                this.uploader.upload(path.getValue(), path.getKey());
             }
         }
 
