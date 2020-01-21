@@ -21,3 +21,8 @@ topics:
   coreSitePath: file://core-site.xml
   hdfsSitePath: file://hdfs-site.xml
   partitionForget: 3000
+- name: topic-3
+  type: S3Uploader
+  bucketName: bucket-2
+  bucketRegion: us-east-1
+  partitionForget: 3000
