@@ -37,9 +37,11 @@ public class KafkaStreamer {
             Uploader uploader;
             HashMap<RecordType, String> hiveTables = new HashMap<>();
 
-            hiveTables.put(RecordType.RECORD, topicProperty.getHive().getRecordTable());
-            hiveTables.put(RecordType.ERROR, topicProperty.getHive().getErrorTable());
-            hiveTables.put(RecordType.TOMBSTONE, topicProperty.getHive().getTombstoneTable());
+            if(topicProperty.getHive() != null) {
+                hiveTables.put(RecordType.RECORD, topicProperty.getHive().getRecordTable());
+                hiveTables.put(RecordType.ERROR, topicProperty.getHive().getErrorTable());
+                hiveTables.put(RecordType.TOMBSTONE, topicProperty.getHive().getTombstoneTable());
+            }
 
             if(topicProperty.getType().equals("HDFSUploader")) {
                 uploader = new HDFSUploader(topicProperty.getHdfsPath(), topicProperty.getCoreSitePath(), topicProperty.getHdfsSitePath(), topicProperty.getTopicPath());
