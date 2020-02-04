@@ -30,6 +30,9 @@ class Application {
             logger.error("Config error.", e);
         }
 
+        System.out.println("MERDA1");
+        System.out.println(applicationProperties.getMetadataPropertyName());
+
         KafkaStreamer kafkaStreamer = new KafkaStreamer(applicationProperties);
         kafkaStreamer.run();
     }
