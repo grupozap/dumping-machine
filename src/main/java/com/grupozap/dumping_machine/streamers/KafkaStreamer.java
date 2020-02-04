@@ -18,6 +18,7 @@ public class KafkaStreamer {
     private final String groupId;
     private final String schemaRegistryUrl;
     private final Integer sessionTimeout;
+    private String metadataPropertyName;
     private final List<TopicProperties> topicProperties;
 
     private final ExecutorService pool;
@@ -29,6 +30,7 @@ public class KafkaStreamer {
         this.topicProperties = applicationProperties.getTopics();
         this.sessionTimeout = applicationProperties.getSessionTimeout();
         this.pool = Executors.newFixedThreadPool(topicProperties.size());
+        this.metadataPropertyName = applicationProperties.getMetadataPropertyName();
     }
 
     public void run() {
@@ -51,7 +53,7 @@ public class KafkaStreamer {
                 uploader = new S3Uploader(topicProperty.getBucketName(), topicProperty.getBucketRegion());
             }
 
-            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, this.sessionTimeout, uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget(), metaStoreUris, hiveTables);
+            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, this.sessionTimeout, uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget(), metaStoreUris, hiveTables, this.metadataPropertyName);
 
             this.pool.execute(topicStreamer);
         }

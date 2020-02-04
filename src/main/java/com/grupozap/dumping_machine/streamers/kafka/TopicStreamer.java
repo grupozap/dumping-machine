@@ -27,9 +27,10 @@ public class TopicStreamer implements Runnable {
     private final String metaStoreUris;
     private final int sessionTimeout;
     private final long partitionForget;
+    private final String metadataPropertyName;
     private final HashMap<RecordType, String> hiveTables;
 
-    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, int sessionTimeout, Uploader uploader, String topic, long poolTimeout, long partitionForget, String metaStoreUris, HashMap<RecordType, String> hiveTables) {
+    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, int sessionTimeout, Uploader uploader, String topic, long poolTimeout, long partitionForget, String metaStoreUris, HashMap<RecordType, String> hiveTables, String metadataPropertyName) {
         this.bootstrapServers = bootstrapServers;
         this.groupId = groupId;
         this.schemaRegistryUrl = schemaRegistryUrl;
@@ -40,6 +41,7 @@ public class TopicStreamer implements Runnable {
         this.hiveTables = hiveTables;
         this.poolTimeout = poolTimeout;
         this.partitionForget = partitionForget;
+        this.metadataPropertyName = metadataPropertyName;
     }
 
     @Override
@@ -58,7 +60,7 @@ public class TopicStreamer implements Runnable {
                 logger.trace("Topic: " + this.topic + " - Consuming " + records.count() + " records");
 
                 for (ConsumerRecord<String, GenericRecord> record : records) {
-                    hourlyBasedPartitioner.consume(new AvroExtendedMessage(record));
+                    hourlyBasedPartitioner.consume(new AvroExtendedMessage(record, this.metadataPropertyName));
                 }
 
                 // Flush closed partitions

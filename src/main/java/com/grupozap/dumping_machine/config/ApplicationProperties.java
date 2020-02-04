@@ -8,6 +8,7 @@ public class ApplicationProperties {
     private String schemaRegistryUrl;
     private String groupId;
     private Integer sessionTimeout;
+    private String metadataPropertyName;
     private List<TopicProperties> topics;
 
     public List<TopicProperties> getTopics() {
@@ -53,5 +54,18 @@ public class ApplicationProperties {
 
     public void setSessionTimeout(Integer sessionTimeout) {
         this.sessionTimeout = sessionTimeout;
+    }
+
+    public String getMetadataPropertyName() {
+
+        if(metadataPropertyName != null) {
+            return metadataPropertyName;
+        } else {
+            return "metadata";
+        }
+    }
+
+    public void setMetadataPropertyName(String metadataPropertyName) {
+        this.metadataPropertyName = metadataPropertyName;
     }
 }
