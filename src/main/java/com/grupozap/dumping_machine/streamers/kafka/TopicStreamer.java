@@ -41,27 +41,20 @@ public class TopicStreamer implements Runnable {
         this.hiveTables = hiveTables;
         this.poolTimeout = poolTimeout;
         this.partitionForget = partitionForget;
-        System.out.println("PUTAQUEPARIU1");
         this.metadataPropertyName = metadataPropertyName;
     }
 
     @Override
     public void run() {
-        System.out.println("PUTAQUEPARIU2");
         ConsumerRecords<String, GenericRecord> records;
-        System.out.println("PUTAQUEPARIU3");
         KafkaConsumer consumer = getConsumer();
-        System.out.println("PUTAQUEPARIU4");
-        System.out.println(this.metadataPropertyName);
         HourlyBasedPartitioner hourlyBasedPartitioner = new HourlyBasedPartitioner(this.topic, this.uploader, this.partitionForget, this.metaStoreUris, this.hiveTables);
         TopicConsumerRebalanceListener topicConsumerRebalanceListener = new TopicConsumerRebalanceListener(consumer, this.topic, hourlyBasedPartitioner);
 
         consumer.subscribe(Arrays.asList(this.topic), topicConsumerRebalanceListener);
-        System.out.println("PUTAQUEPARIU5");
         try {
             while (true) {
                 records = consumer.poll(this.poolTimeout);
-                System.out.println("PUTAQUEPARIU6");
                 logger.trace("Topic: " + this.topic + " - Consuming " + records.count() + " records");
 
                 for (ConsumerRecord<String, GenericRecord> record : records) {
