@@ -26,3 +26,4 @@ topics:
   bucketName: bucket-2
   bucketRegion: us-east-1
   partitionForget: 3000
+  metadataPropertyName: kafka-information
