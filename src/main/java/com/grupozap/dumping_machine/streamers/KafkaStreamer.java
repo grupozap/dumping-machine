@@ -36,10 +36,14 @@ public class KafkaStreamer {
         for(TopicProperties topicProperty : topicProperties) {
             Uploader uploader;
             HashMap<RecordType, String> hiveTables = new HashMap<>();
+            String metaStoreUris = null;
 
-            hiveTables.put(RecordType.RECORD, topicProperty.getHive().getRecordTable());
-            hiveTables.put(RecordType.ERROR, topicProperty.getHive().getErrorTable());
-            hiveTables.put(RecordType.TOMBSTONE, topicProperty.getHive().getTombstoneTable());
+            if(topicProperty.getHive() != null) {
+                metaStoreUris = topicProperty.getHive().getUrl();
+                hiveTables.put(RecordType.RECORD, topicProperty.getHive().getRecordTable());
+                hiveTables.put(RecordType.ERROR, topicProperty.getHive().getErrorTable());
+                hiveTables.put(RecordType.TOMBSTONE, topicProperty.getHive().getTombstoneTable());
+            }
 
             if(topicProperty.getType().equals("HDFSUploader")) {
                 uploader = new HDFSUploader(topicProperty.getHdfsPath(), topicProperty.getCoreSitePath(), topicProperty.getHdfsSitePath(), topicProperty.getTopicPath());
@@ -47,7 +51,7 @@ public class KafkaStreamer {
                 uploader = new S3Uploader(topicProperty.getBucketName(), topicProperty.getBucketRegion());
             }
 
-            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, this.sessionTimeout, uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget(), topicProperty.getHive().getUrl(), hiveTables);
+            TopicStreamer topicStreamer = new TopicStreamer(this.bootstrapServers, this.groupId, this.schemaRegistryUrl, this.sessionTimeout, uploader, topicProperty.getName(), topicProperty.getPoolTimeout(), topicProperty.getPartitionForget(), metaStoreUris, hiveTables);
 
             this.pool.execute(topicStreamer);
         }
