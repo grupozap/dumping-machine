@@ -30,7 +30,6 @@ public class AvroSchemaRegistryDeserializer extends KafkaAvroDeserializer {
         try {
             return this.deserialize(bytes);
         } catch(SerializationException e) {
-            e.printStackTrace();
             logger.warn(e.getMessage());
 
             GenericRecordBuilder newGenericRecordBuilder = new GenericRecordBuilder(this.getSchema());
