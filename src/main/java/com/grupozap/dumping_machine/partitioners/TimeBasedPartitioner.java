@@ -15,8 +15,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
-public class HourlyBasedPartitioner {
-    private final Logger logger = LoggerFactory.getLogger(HourlyBasedPartitioner.class);
+public class TimeBasedPartitioner {
+    private final Logger logger = LoggerFactory.getLogger(TimeBasedPartitioner.class);
 
     private HashMap<TimeBasedRecordConsumer, ArrayList<PartitionInfo>> writerPartitionInfos;
     private ArrayList<PartitionInfo> partitionInfos;
@@ -30,7 +30,7 @@ public class HourlyBasedPartitioner {
 
     private final long waitFor = 300000;
 
-    public HourlyBasedPartitioner(String topic, Uploader uploader, long partitionForget, String metaStoreUris, HashMap<RecordType, String> hiveTables, String partitionPattern) {
+    public TimeBasedPartitioner(String topic, Uploader uploader, long partitionForget, String metaStoreUris, HashMap<RecordType, String> hiveTables, String partitionPattern) {
         this.topic = topic;
         this.uploader = uploader;
         this.hiveTables = hiveTables;

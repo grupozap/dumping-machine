@@ -14,8 +14,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 
-public class HourlyBasedRecordConsumer implements RecordConsumer {
-    private final Logger logger = LoggerFactory.getLogger(HourlyBasedRecordConsumer.class);
+public class TimeBasedRecordConsumer implements RecordConsumer {
+    private final Logger logger = LoggerFactory.getLogger(TimeBasedRecordConsumer.class);
 
     private HashMap<Schema, RecordWriter> recordWriters;
     private HashMap<String, Schema> pathSchemas;
@@ -26,10 +26,10 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
 
     private final String topic;
     private final long firstTimestamp;
+    private final String partitionPattern;
     private long updateTimestamp;
-    private String partitionPattern;
 
-    public HourlyBasedRecordConsumer(String topic, long firstTimestamp, String partitionPattern) {
+    public TimeBasedRecordConsumer(String topic, long firstTimestamp, String partitionPattern) {
         this.topic = topic;
         this.firstTimestamp = firstTimestamp;
         this.updateTimestamp = System.currentTimeMillis();
