@@ -10,6 +10,7 @@ public class ApplicationProperties {
     private Integer sessionTimeout;
     private String metadataPropertyName;
     private List<TopicProperties> topics;
+    private String partitionPattern;
 
     public List<TopicProperties> getTopics() {
         return topics;
@@ -67,5 +68,18 @@ public class ApplicationProperties {
 
     public void setMetadataPropertyName(String metadataPropertyName) {
         this.metadataPropertyName = metadataPropertyName;
+    }
+
+    public String getPartitionPattern(){
+        if(partitionPattern != null){
+            return partitionPattern;
+        } else {
+            return "'dt='yyyy-MM-dd'/hr='HH'/'";
+        }
+
+    }
+
+    public void setPartitionPattern(String partitionPattern) {
+        this.partitionPattern = partitionPattern;
     }
 }
