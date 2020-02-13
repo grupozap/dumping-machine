@@ -27,4 +27,4 @@ topics:
   bucketRegion: us-east-1
   partitionForget: 3000
   metadataPropertyName: kafka-information
-  partitionPattern: "'dt='YYYY-mm-dd"
+  partitionPattern: "'dt='YYYY-mm-dd'/'"
