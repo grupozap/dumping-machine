@@ -175,7 +175,7 @@ public class TimeBasedPartitioner {
 
                 if (hiveTable != null) {
                     HiveClient hiveClient = new HiveClient(this.metaStoreUris);
-                    HiveUtil.updateHive(hiveClient, hiveTable, schema, path.getValue(), this.uploader.getServerPath());
+                    HiveUtil.updateHive(hiveClient, hiveTable, schema, path.getValue(), this.uploader.getServerPath(), this.partitionPattern);
                 }
             }
         }
