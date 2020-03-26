@@ -28,3 +28,8 @@ topics:
   partitionForget: 3000
   metadataPropertyName: kafka-information
   partitionPattern: "'dt='YYYY-mm-dd'/'"
+  awsGlue:
+        region: us-east-1
+        recordTable: test_awesome.table
+        errorTable: test_awesome.table_error
+        tombstoneTable: test_awesome.table_tombstone
