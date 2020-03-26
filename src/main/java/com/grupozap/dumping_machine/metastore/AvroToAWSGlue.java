@@ -1,18 +1,15 @@
 package com.grupozap.dumping_machine.metastore;
 
 import com.amazonaws.services.glue.model.Column;
-
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.avro.Schema;
-
 
 public class AvroToAWSGlue implements AvroToMetastore<Column> {
 

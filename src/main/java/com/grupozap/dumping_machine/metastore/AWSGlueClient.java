@@ -1,14 +1,11 @@
 package com.grupozap.dumping_machine.metastore;
 
-
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.glue.AWSGlue;
 import com.amazonaws.services.glue.AWSGlueClientBuilder;
 import com.amazonaws.services.glue.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +26,6 @@ public class AWSGlueClient implements MetastoreClient<Column> {
     }
 
     public boolean compareSchemas(List<Column> schema, List<Column> newSchema) {
-        // TODO comparar schema
         return schema.equals(newSchema);
     }
 
@@ -56,7 +52,7 @@ public class AWSGlueClient implements MetastoreClient<Column> {
         return true;
     }
 
-    private TableInput getStructureTable(String tableName, List<Column> columns, List<Column> partitions, String location, @Nullable String database) {
+    private TableInput getStructureTable(String tableName, List<Column> columns, List<Column> partitions, String location) {
         Map tableParameters = new HashMap<String, String>();
         tableParameters.put("classification", "parquet");
         tableParameters.put("parquet.compress", "SNAPPY");
@@ -77,8 +73,6 @@ public class AWSGlueClient implements MetastoreClient<Column> {
 
         return tableInput;
     }
-
-
 
     public boolean databaseExists(String database) {
         try {
@@ -109,7 +103,7 @@ public class AWSGlueClient implements MetastoreClient<Column> {
     }
 
     public void createTable(String database, String table, List<Column> columns, List<Column> partitions, String location) {
-        TableInput tableInput = getStructureTable(table, columns, partitions, location, null);
+        TableInput tableInput = getStructureTable(table, columns, partitions, location);
 
         this.client.createTable(
                 new CreateTableRequest()
@@ -150,9 +144,8 @@ public class AWSGlueClient implements MetastoreClient<Column> {
         }
     }
 
-
     public void close() {
-
+        this.client.shutdown();
     }
 
 }
