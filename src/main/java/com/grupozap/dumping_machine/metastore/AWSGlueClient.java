@@ -117,11 +117,9 @@ public class AWSGlueClient implements MetastoreClient<Column> {
             Table table = this.client.getTable(new GetTableRequest().withDatabaseName(database).withName(tableName))
                     .getTable();
             StorageDescriptor storageDescriptor = table.getStorageDescriptor();
-
             storageDescriptor.setLocation(storageDescriptor.getLocation().replace("s3a://", "s3://") + partition);
 
             List<String> partitions = new ArrayList();
-
             Pattern p = Pattern.compile("\\w+=([^\\/]+)");
             Matcher m = p.matcher(partition);
 
@@ -129,10 +127,7 @@ public class AWSGlueClient implements MetastoreClient<Column> {
                 partitions.add(m.group(1));
             }
 
-
-
             PartitionInput pi = new PartitionInput().withValues(partitions).withStorageDescriptor(storageDescriptor);
-
 
             this.client.createPartition(new CreatePartitionRequest()
                     .withDatabaseName(database)
