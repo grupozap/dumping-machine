@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class HiveClient {
+public class HiveClient implements MetastoreClient<FieldSchema> {
 
     private final IMetaStoreClient client;
     private final Logger logger = LoggerFactory.getLogger(HiveClient.class);
