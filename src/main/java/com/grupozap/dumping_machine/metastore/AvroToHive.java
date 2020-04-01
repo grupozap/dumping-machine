@@ -12,9 +12,9 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-abstract class AvroToHive {
+public class AvroToHive implements AvroToMetastore<FieldSchema>{
 
-    static List<FieldSchema> getPartitions(String partitionPattern) {
+    public List<FieldSchema> getPartitions(String partitionPattern) {
         List<FieldSchema> partitions = new ArrayList<>();
         Pattern p = Pattern.compile("\'([^\']*)\'");
         Matcher m = p.matcher(partitionPattern);
@@ -28,7 +28,7 @@ abstract class AvroToHive {
         return partitions;
     }
 
-    static List<FieldSchema> generateSchema(Schema schema) throws Exception {
+    public List<FieldSchema> generateSchema(Schema schema) throws Exception {
 
         // TODO: reflection was used because the SchemaToTypeInfo class is private
         Class<?> schemaToTypeInfo = Class.forName("org.apache.hadoop.hive.serde2.avro.SchemaToTypeInfo");

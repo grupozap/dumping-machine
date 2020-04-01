@@ -74,7 +74,7 @@ public class ApplicationProperties {
         if(partitionPattern != null){
             return partitionPattern;
         } else {
-            return "'dt='yyyy-MM-dd'/hr='HH'/'";
+            return "'dt='yyyy-MM-dd'/hr='HH";
         }
 
     }

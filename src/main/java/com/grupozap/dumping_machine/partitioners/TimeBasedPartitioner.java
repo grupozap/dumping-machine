@@ -3,8 +3,7 @@ package com.grupozap.dumping_machine.partitioners;
 import com.grupozap.dumping_machine.consumers.TimeBasedRecordConsumer;
 import com.grupozap.dumping_machine.deserializers.RecordType;
 import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
-import com.grupozap.dumping_machine.metastore.HiveClient;
-import com.grupozap.dumping_machine.metastore.HiveUtil;
+import com.grupozap.dumping_machine.metastore.MetastoreService;
 import com.grupozap.dumping_machine.uploaders.Uploader;
 import org.apache.avro.Schema;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -24,21 +23,19 @@ public class TimeBasedPartitioner {
     private final String topic;
     private final Uploader uploader;
     private final long partitionForget;
-    private final String metaStoreUris;
-    private final HashMap<RecordType, String> hiveTables;
     private final String partitionPattern;
+    private final MetastoreService metastoreService;
 
     private final long waitFor = 300000;
 
-    public TimeBasedPartitioner(String topic, Uploader uploader, long partitionForget, String metaStoreUris, HashMap<RecordType, String> hiveTables, String partitionPattern) {
+    public TimeBasedPartitioner(String topic, Uploader uploader, long partitionForget, String partitionPattern,  MetastoreService metastoreService) {
         this.topic = topic;
         this.uploader = uploader;
-        this.hiveTables = hiveTables;
         this.partitionForget = partitionForget;
-        this.metaStoreUris = metaStoreUris;
         this.partitionPattern = partitionPattern;
         this.writerPartitionInfos = new HashMap<>();
         this.partitionInfos = new ArrayList<>();
+        this.metastoreService = metastoreService;
     }
 
     public void consume(AvroExtendedMessage record) throws IOException {
@@ -164,18 +161,13 @@ public class TimeBasedPartitioner {
 
         for (Map.Entry<RecordType, HashMap<String, String>> entry : timeBasedRecordConsumer.getFilePaths().entrySet()) {
             for (Map.Entry<String, String> path : entry.getValue().entrySet()) {
-
-                String hiveTable = hiveTables.get(entry.getKey());
-
-                Schema schema = timeBasedRecordConsumer.getSchema(path.getKey());
-
                 logger.info("Topic: " + this.topic + " - Uploading hourlyBasedRecordConsumer for " + this.topic + " path " + path.getValue());
 
                 this.uploader.upload(path.getValue(), path.getKey());
 
-                if (hiveTable != null) {
-                    HiveClient hiveClient = new HiveClient(this.metaStoreUris);
-                    HiveUtil.updateHive(hiveClient, hiveTable, schema, path.getValue(), this.uploader.getServerPath(), this.partitionPattern);
+                if (this.metastoreService != null) {
+                    Schema schema = timeBasedRecordConsumer.getSchema(path.getKey());
+                    this.metastoreService.updateMetastore(entry.getKey(), schema, path.getValue(), this.uploader.getServerPath(), this.partitionPattern);
                 }
             }
         }

@@ -155,7 +155,7 @@ public class TimeBasedRecordConsumer implements RecordConsumer {
     }
 
     private RecordWriter createFile(Schema schema, RecordType recordType, int partition, long offset) throws IOException {
-        String localPartitionPath = this.localPath + this.topic + "/" + recordType.toString().toLowerCase() + "/" + this.getPartitionPath();
+        String localPartitionPath = this.localPath + this.topic + "/" + recordType.toString().toLowerCase() + "/" + this.getPartitionPath() + "/";
         String fileName = partition + "_" + offset + ".parquet";
 
         logger.info("Topic: " + this.topic + " - Opening file " + localPartitionPath + fileName + " for partition " + partition + " and type " + recordType);

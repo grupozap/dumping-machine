@@ -1,7 +1,7 @@
 package com.grupozap.dumping_machine.streamers.kafka;
 
-import com.grupozap.dumping_machine.deserializers.RecordType;
 import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
+import com.grupozap.dumping_machine.metastore.MetastoreService;
 import com.grupozap.dumping_machine.partitioners.TimeBasedPartitioner;
 import com.grupozap.dumping_machine.partitioners.PartitionInfo;
 import com.grupozap.dumping_machine.uploaders.Uploader;
@@ -24,33 +24,31 @@ public class TopicStreamer implements Runnable {
     private final String bootstrapServers;
     private final String groupId;
     private final String schemaRegistryUrl;
-    private final String metaStoreUris;
     private final int sessionTimeout;
     private final long partitionForget;
     private final String metadataPropertyName;
     private final String partitionPattern;
-    private final HashMap<RecordType, String> hiveTables;
+    private final MetastoreService metastoreService;
 
-    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, int sessionTimeout, Uploader uploader, String topic, long poolTimeout, long partitionForget, String metaStoreUris, HashMap<RecordType, String> hiveTables, String metadataPropertyName, String partitionPattern) {
+    public TopicStreamer(String bootstrapServers, String groupId, String schemaRegistryUrl, int sessionTimeout, Uploader uploader, String topic, long poolTimeout, long partitionForget, String metadataPropertyName, String partitionPattern, MetastoreService metastoreService) {
         this.bootstrapServers = bootstrapServers;
         this.groupId = groupId;
         this.schemaRegistryUrl = schemaRegistryUrl;
         this.sessionTimeout = sessionTimeout;
-        this.metaStoreUris = metaStoreUris;
         this.uploader = uploader;
         this.topic = topic;
-        this.hiveTables = hiveTables;
         this.poolTimeout = poolTimeout;
         this.partitionForget = partitionForget;
         this.metadataPropertyName = metadataPropertyName;
         this.partitionPattern = partitionPattern;
+        this.metastoreService = metastoreService;
     }
 
     @Override
     public void run() {
         ConsumerRecords<String, GenericRecord> records;
         KafkaConsumer consumer = getConsumer();
-        TimeBasedPartitioner timeBasedPartitioner = new TimeBasedPartitioner(this.topic, this.uploader, this.partitionForget, this.metaStoreUris, this.hiveTables, this.partitionPattern);
+        TimeBasedPartitioner timeBasedPartitioner = new TimeBasedPartitioner(this.topic, this.uploader, this.partitionForget, this.partitionPattern, this.metastoreService);
         TopicConsumerRebalanceListener topicConsumerRebalanceListener = new TopicConsumerRebalanceListener(consumer, this.topic, timeBasedPartitioner);
 
         consumer.subscribe(Arrays.asList(this.topic), topicConsumerRebalanceListener);
