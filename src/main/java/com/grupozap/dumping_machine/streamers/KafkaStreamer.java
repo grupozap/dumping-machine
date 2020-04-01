@@ -67,7 +67,6 @@ public class KafkaStreamer {
     public void run() throws Exception {
 
         for(TopicProperties topicProperty : topicProperties) {
-            System.out.println(topicProperty.getAwsGlue().getRecordTable());
             Uploader uploader;
             MetastoreService ms = buildMetastoreService(topicProperty);
 
