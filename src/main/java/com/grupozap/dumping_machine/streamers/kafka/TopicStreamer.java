@@ -70,6 +70,7 @@ public class TopicStreamer implements Runnable {
             logger.info("Topic: " + this.topic + " - Closing consumer");
             consumer.unsubscribe();
             consumer.close();
+            this.metastoreService.close();
         }
     }
 

@@ -1,6 +1,5 @@
 package com.grupozap.dumping_machine.metastore;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 public interface MetastoreClient<T> {

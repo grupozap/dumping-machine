@@ -32,17 +32,13 @@ public class MetastoreService {
             String location = getLocation(path, serverPath);
             String partition = getPartition(path);
 
-            try {
-                if (this.metastoreClient.tableExists(dataBase, tableName))
-                    updateTable(dataBase, tableName, schemaAvro, partitionPattern);
-                else
-                    createTable(dataBase, tableName, schemaAvro, location, partitionPattern);
+            if (this.metastoreClient.tableExists(dataBase, tableName))
+                updateTable(dataBase, tableName, schemaAvro, partitionPattern);
+            else
+                createTable(dataBase, tableName, schemaAvro, location, partitionPattern);
 
-                logger.info("Adding partition {} in table {}.{}", partition, dataBase, tableName);
-                this.metastoreClient.addPartition(dataBase, tableName, partition);
-            } finally {
-                this.metastoreClient.close();
-            }
+            logger.info("Adding partition {} in table {}.{}", partition, dataBase, tableName);
+            this.metastoreClient.addPartition(dataBase, tableName, partition);
         }
     }
 
@@ -70,6 +66,10 @@ public class MetastoreService {
 
         logger.info("Creating table {}.{}", dataBase, tableName);
         this.metastoreClient.createTable(dataBase, tableName, schema, partitions, location);
+    }
+
+    public void close() {
+        this.metastoreClient.close();
     }
 
     private static String getPartition(String path) {
