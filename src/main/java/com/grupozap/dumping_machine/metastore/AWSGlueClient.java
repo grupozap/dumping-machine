@@ -61,7 +61,13 @@ public class AWSGlueClient implements MetastoreClient<Column> {
         storageDescriptor.setLocation(location.replace("s3a://", "s3://"));
         storageDescriptor.setInputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat");
         storageDescriptor.setOutputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat");
-        storageDescriptor.setSerdeInfo(new SerDeInfo().withSerializationLibrary("org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"));
+
+        SerDeInfo serDeInfo = new SerDeInfo().withSerializationLibrary("org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe");
+        Map serdeParameters = new HashMap<String, String>();
+        serdeParameters.put("serialization.format", "1");
+        serDeInfo.setParameters(serdeParameters);
+
+        storageDescriptor.setSerdeInfo(serDeInfo);
         storageDescriptor.setColumns(columns);
 
         TableInput tableInput = new TableInput();
