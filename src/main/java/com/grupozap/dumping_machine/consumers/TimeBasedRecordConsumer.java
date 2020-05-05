@@ -14,8 +14,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 
-public class HourlyBasedRecordConsumer implements RecordConsumer {
-    private final Logger logger = LoggerFactory.getLogger(HourlyBasedRecordConsumer.class);
+public class TimeBasedRecordConsumer implements RecordConsumer {
+    private final Logger logger = LoggerFactory.getLogger(TimeBasedRecordConsumer.class);
 
     private HashMap<Schema, RecordWriter> recordWriters;
     private HashMap<String, Schema> pathSchemas;
@@ -26,14 +26,17 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
 
     private final String topic;
     private final long firstTimestamp;
+    private final String partitionPattern;
     private long updateTimestamp;
 
-    public HourlyBasedRecordConsumer(String topic, long firstTimestamp) {
+    public TimeBasedRecordConsumer(String topic, long firstTimestamp, String partitionPattern) {
         this.topic = topic;
         this.firstTimestamp = firstTimestamp;
         this.updateTimestamp = System.currentTimeMillis();
+        this.partitionPattern = partitionPattern;
         this.recordWriters = new HashMap<>();
         this.pathSchemas = new HashMap<>();
+
     }
 
     @Override
@@ -123,11 +126,10 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
     }
 
     public String getPartitionPath() {
-        SimpleDateFormat dayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat hourDateFormat = new SimpleDateFormat("HH");
+        SimpleDateFormat sdf = new SimpleDateFormat(this.partitionPattern);
         Date date = new Date(this.getFirstTimestamp());
 
-        return "dt=" + dayDateFormat.format(date) + "/hr=" + hourDateFormat.format(date) + "/";
+        return sdf.format(date);
     }
 
     public long getMaxTimestamp() {
@@ -153,7 +155,7 @@ public class HourlyBasedRecordConsumer implements RecordConsumer {
     }
 
     private RecordWriter createFile(Schema schema, RecordType recordType, int partition, long offset) throws IOException {
-        String localPartitionPath = this.localPath + this.topic + "/" + recordType.toString().toLowerCase() + "/" + this.getPartitionPath();
+        String localPartitionPath = this.localPath + this.topic + "/" + recordType.toString().toLowerCase() + "/" + this.getPartitionPath() + "/";
         String fileName = partition + "_" + offset + ".parquet";
 
         logger.info("Topic: " + this.topic + " - Opening file " + localPartitionPath + fileName + " for partition " + partition + " and type " + recordType);

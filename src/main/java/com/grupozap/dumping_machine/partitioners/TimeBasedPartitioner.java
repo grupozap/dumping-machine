@@ -1,10 +1,9 @@
 package com.grupozap.dumping_machine.partitioners;
 
-import com.grupozap.dumping_machine.consumers.HourlyBasedRecordConsumer;
+import com.grupozap.dumping_machine.consumers.TimeBasedRecordConsumer;
 import com.grupozap.dumping_machine.deserializers.RecordType;
 import com.grupozap.dumping_machine.formaters.AvroExtendedMessage;
-import com.grupozap.dumping_machine.metastore.HiveClient;
-import com.grupozap.dumping_machine.metastore.HiveUtil;
+import com.grupozap.dumping_machine.metastore.MetastoreService;
 import com.grupozap.dumping_machine.uploaders.Uploader;
 import org.apache.avro.Schema;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -15,28 +14,28 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
-public class HourlyBasedPartitioner {
-    private final Logger logger = LoggerFactory.getLogger(HourlyBasedPartitioner.class);
+public class TimeBasedPartitioner {
+    private final Logger logger = LoggerFactory.getLogger(TimeBasedPartitioner.class);
 
-    private HashMap<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> writerPartitionInfos;
+    private HashMap<TimeBasedRecordConsumer, ArrayList<PartitionInfo>> writerPartitionInfos;
     private ArrayList<PartitionInfo> partitionInfos;
 
     private final String topic;
     private final Uploader uploader;
     private final long partitionForget;
-    private final String metaStoreUris;
-    private final HashMap<RecordType, String> hiveTables;
+    private final String partitionPattern;
+    private final MetastoreService metastoreService;
 
     private final long waitFor = 300000;
 
-    public HourlyBasedPartitioner(String topic, Uploader uploader, long partitionForget, String metaStoreUris, HashMap<RecordType, String> hiveTables) {
+    public TimeBasedPartitioner(String topic, Uploader uploader, long partitionForget, String partitionPattern,  MetastoreService metastoreService) {
         this.topic = topic;
         this.uploader = uploader;
-        this.hiveTables = hiveTables;
         this.partitionForget = partitionForget;
-        this.metaStoreUris = metaStoreUris;
+        this.partitionPattern = partitionPattern;
         this.writerPartitionInfos = new HashMap<>();
         this.partitionInfos = new ArrayList<>();
+        this.metastoreService = metastoreService;
     }
 
     public void consume(AvroExtendedMessage record) throws IOException {
@@ -49,28 +48,28 @@ public class HourlyBasedPartitioner {
 
     public Map<TopicPartition, OffsetAndMetadata> commitWriters() throws Exception {
         Map<TopicPartition, OffsetAndMetadata> topicPartitionOffsetAndMetadataMap = new HashMap<>();
-        ArrayList<HourlyBasedRecordConsumer> closedHourlyBasedRecordConsumers = this.getClosedWriters();
+        ArrayList<TimeBasedRecordConsumer> closedTimeBasedRecordConsumers = this.getClosedWriters();
 
-        for (HourlyBasedRecordConsumer hourlyBasedRecordConsumer : closedHourlyBasedRecordConsumers) {
-            for (PartitionInfo partitionInfo : writerPartitionInfos.get(hourlyBasedRecordConsumer)) {
+        for (TimeBasedRecordConsumer timeBasedRecordConsumer : closedTimeBasedRecordConsumers) {
+            for (PartitionInfo partitionInfo : writerPartitionInfos.get(timeBasedRecordConsumer)) {
                 // TODO: Sort writers by creation time instead of ordering the result by offsets
                 if (topicPartitionOffsetAndMetadataMap.get(partitionInfo.getTopicPartition()) == null || topicPartitionOffsetAndMetadataMap.get(partitionInfo.getTopicPartition()).offset() < partitionInfo.getLastOffset()) {
                     topicPartitionOffsetAndMetadataMap.put(partitionInfo.getTopicPartition(), partitionInfo.getNextOffsetAndMetadata());
                 }
             }
 
-            this.closeWriter(hourlyBasedRecordConsumer);
+            this.closeWriter(timeBasedRecordConsumer);
         }
 
-        this.writerPartitionInfos.keySet().removeAll(closedHourlyBasedRecordConsumers);
+        this.writerPartitionInfos.keySet().removeAll(closedTimeBasedRecordConsumers);
 
         return topicPartitionOffsetAndMetadataMap;
     }
 
     public void clearPartitions() throws IOException {
-        for (HourlyBasedRecordConsumer hourlyBasedRecordConsumer : this.writerPartitionInfos.keySet()) {
-            hourlyBasedRecordConsumer.close();
-            hourlyBasedRecordConsumer.delete();
+        for (TimeBasedRecordConsumer timeBasedRecordConsumer : this.writerPartitionInfos.keySet()) {
+            timeBasedRecordConsumer.close();
+            timeBasedRecordConsumer.delete();
         }
 
         this.writerPartitionInfos = new HashMap<>();
@@ -81,27 +80,27 @@ public class HourlyBasedPartitioner {
         return this.partitionInfos;
     }
 
-    private HashMap<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> addOrUpdateWriter(HashMap<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> localWriterPartitionInfos, AvroExtendedMessage record) throws IOException {
-        HourlyBasedRecordConsumer recordHourlyBasedRecordConsumer = null;
+    private HashMap<TimeBasedRecordConsumer, ArrayList<PartitionInfo>> addOrUpdateWriter(HashMap<TimeBasedRecordConsumer, ArrayList<PartitionInfo>> localWriterPartitionInfos, AvroExtendedMessage record) throws IOException {
+        TimeBasedRecordConsumer recordTimeBasedRecordConsumer = null;
         ArrayList<PartitionInfo> localPartitionInfos = new ArrayList<>();
 
-        for (HourlyBasedRecordConsumer hourlyBasedRecordConsumer : localWriterPartitionInfos.keySet()) {
-            if (hourlyBasedRecordConsumer.getMinTimestamp() <= record.getTimestamp() && record.getTimestamp() <= hourlyBasedRecordConsumer.getMaxTimestamp()) {
-                recordHourlyBasedRecordConsumer = hourlyBasedRecordConsumer;
+        for (TimeBasedRecordConsumer timeBasedRecordConsumer : localWriterPartitionInfos.keySet()) {
+            if (timeBasedRecordConsumer.getMinTimestamp() <= record.getTimestamp() && record.getTimestamp() <= timeBasedRecordConsumer.getMaxTimestamp()) {
+                recordTimeBasedRecordConsumer = timeBasedRecordConsumer;
             }
         }
 
-        if (recordHourlyBasedRecordConsumer == null) {
-            recordHourlyBasedRecordConsumer = new HourlyBasedRecordConsumer(this.topic, record.getTimestamp());
+        if (recordTimeBasedRecordConsumer == null) {
+            recordTimeBasedRecordConsumer = new TimeBasedRecordConsumer(this.topic, record.getTimestamp(), this.partitionPattern);
         } else {
-            localPartitionInfos = localWriterPartitionInfos.get(recordHourlyBasedRecordConsumer);
+            localPartitionInfos = localWriterPartitionInfos.get(recordTimeBasedRecordConsumer);
         }
 
         localPartitionInfos = this.addOrUpdatePartitionInfo(localPartitionInfos, record);
 
-        recordHourlyBasedRecordConsumer.write(record);
+        recordTimeBasedRecordConsumer.write(record);
 
-        localWriterPartitionInfos.put(recordHourlyBasedRecordConsumer, localPartitionInfos);
+        localWriterPartitionInfos.put(recordTimeBasedRecordConsumer, localPartitionInfos);
 
         logger.trace("Topic: " + this.topic + " - Consuming message (Partition: " + record.getPartition() + ", Offset: " + record.getOffset() + ")");
 
@@ -133,16 +132,16 @@ public class HourlyBasedPartitioner {
         return localPartitionInfos;
     }
 
-    private ArrayList<HourlyBasedRecordConsumer> getClosedWriters() {
-        ArrayList<HourlyBasedRecordConsumer> removedHourlyBasedRecordConsumers = new ArrayList<>();
+    private ArrayList<TimeBasedRecordConsumer> getClosedWriters() {
+        ArrayList<TimeBasedRecordConsumer> removedTimeBasedRecordConsumers = new ArrayList<>();
 
-        for (Map.Entry<HourlyBasedRecordConsumer, ArrayList<PartitionInfo>> entry : this.writerPartitionInfos.entrySet()) {
+        for (Map.Entry<TimeBasedRecordConsumer, ArrayList<PartitionInfo>> entry : this.writerPartitionInfos.entrySet()) {
             if ((arePartitionsClosed(entry.getValue()) && entry.getKey().getUpdateTimestamp() + this.waitFor < System.currentTimeMillis()) || entry.getKey().getUpdateTimestamp() + this.partitionForget < System.currentTimeMillis()) {
-                removedHourlyBasedRecordConsumers.add(entry.getKey());
+                removedTimeBasedRecordConsumers.add(entry.getKey());
             }
         }
 
-        return removedHourlyBasedRecordConsumers;
+        return removedTimeBasedRecordConsumers;
     }
 
     private boolean arePartitionsClosed(ArrayList<PartitionInfo> partitions) {
@@ -157,28 +156,23 @@ public class HourlyBasedPartitioner {
         return true;
     }
 
-    private void closeWriter(HourlyBasedRecordConsumer hourlyBasedRecordConsumer) throws Exception {
-        hourlyBasedRecordConsumer.close();
+    private void closeWriter(TimeBasedRecordConsumer timeBasedRecordConsumer) throws Exception {
+        timeBasedRecordConsumer.close();
 
-        for (Map.Entry<RecordType, HashMap<String, String>> entry : hourlyBasedRecordConsumer.getFilePaths().entrySet()) {
+        for (Map.Entry<RecordType, HashMap<String, String>> entry : timeBasedRecordConsumer.getFilePaths().entrySet()) {
             for (Map.Entry<String, String> path : entry.getValue().entrySet()) {
-
-                String hiveTable = hiveTables.get(entry.getKey());
-
-                Schema schema = hourlyBasedRecordConsumer.getSchema(path.getKey());
-
                 logger.info("Topic: " + this.topic + " - Uploading hourlyBasedRecordConsumer for " + this.topic + " path " + path.getValue());
 
                 this.uploader.upload(path.getValue(), path.getKey());
 
-                if (hiveTable != null) {
-                    HiveClient hiveClient = new HiveClient(this.metaStoreUris);
-                    HiveUtil.updateHive(hiveClient, hiveTable, schema, path.getValue(), this.uploader.getServerPath());
+                if (this.metastoreService != null) {
+                    Schema schema = timeBasedRecordConsumer.getSchema(path.getKey());
+                    this.metastoreService.updateMetastore(entry.getKey(), schema, path.getValue(), this.uploader.getServerPath(), this.partitionPattern);
                 }
             }
         }
 
-        hourlyBasedRecordConsumer.delete();
+        timeBasedRecordConsumer.delete();
     }
 
     private boolean validateDuplicateMessage(ArrayList<PartitionInfo> localPartitionInfos, AvroExtendedMessage record){

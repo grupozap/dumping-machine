@@ -13,6 +13,7 @@ public class TopicProperties {
     private Long poolTimeout;
     private Long partitionForget;
     private HiveProperties hive;
+    private AWSGlueProperties awsGlue;
 
     public String getUploaderClass() {
         return uploaderClass;
@@ -113,4 +114,8 @@ public class TopicProperties {
     public void setHive(HiveProperties hive) {
         this.hive = hive;
     }
+
+    public AWSGlueProperties getAwsGlue() { return awsGlue; }
+
+    public void setAwsGlue(AWSGlueProperties awsGlue) { this.awsGlue = awsGlue; }
 }

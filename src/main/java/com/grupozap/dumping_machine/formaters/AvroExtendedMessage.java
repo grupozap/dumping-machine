@@ -13,8 +13,11 @@ import java.util.List;
 public class AvroExtendedMessage {
     ConsumerRecord<String, GenericRecord> record;
 
-    public AvroExtendedMessage(ConsumerRecord<String, GenericRecord> record) {
+    private final String metadataPropertyName;
+
+    public AvroExtendedMessage(ConsumerRecord<String, GenericRecord> record, String metadataPropertyName) {
         this.record = record;
+        this.metadataPropertyName = metadataPropertyName;
     }
 
     public int getPartition() {
@@ -32,7 +35,7 @@ public class AvroExtendedMessage {
     public GenericRecord getRecord() {
         GenericRecordBuilder newGenericRecordBuilder = new GenericRecordBuilder(this.getSchema());
 
-        newGenericRecordBuilder.set("metadata", this.getMetadata());
+        newGenericRecordBuilder.set(this.metadataPropertyName, this.getMetadata());
 
         if(!isTombstone()) {
             for(Schema.Field field : this.record.value().getSchema().getFields()) {
@@ -60,7 +63,7 @@ public class AvroExtendedMessage {
 
             ArrayList<Schema.Field> newFields = new ArrayList();
 
-            newFields.add(0, new Schema.Field("metadata", Schema.createUnion(this.getMetadataSchema(), Schema.create(Schema.Type.NULL)), "", "null"));
+            newFields.add(0, new Schema.Field(this.metadataPropertyName, Schema.createUnion(this.getMetadataSchema(), Schema.create(Schema.Type.NULL)), "", "null"));
 
             newSchema.setFields(newFields);
 
@@ -75,7 +78,7 @@ public class AvroExtendedMessage {
 
             Schema newSchema = Schema.createRecord(schema.getName(), schema.getDoc(), schema.getNamespace(), schema.isError());
 
-            newFields.add(0, new Schema.Field("metadata", Schema.createUnion(this.getMetadataSchema(), Schema.create(Schema.Type.NULL)), "", "null"));
+            newFields.add(0, new Schema.Field(this.metadataPropertyName, Schema.createUnion(this.getMetadataSchema(), Schema.create(Schema.Type.NULL)), "", "null"));
 
             for(Schema.Field field : fields) {
                 newFields.add(position, new Schema.Field(field.name(), field.schema(), field.doc(), field.defaultVal()));
