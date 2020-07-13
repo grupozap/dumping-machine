@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.System;
 
 public abstract class HiveUtil {
 
@@ -41,8 +42,12 @@ public abstract class HiveUtil {
         newSchemaCompare.addAll(AvroToHive.getPartitions());
 
         if (!hiveClient.compareSchemas(oldSchema, newSchemaCompare)) {
+
+            if(Boolean.parseBoolean(System.getenv("DM_HIVE_DISABLE_UPDATE_COLUMN_COMMENT")))
+                getHiveColumnsComments(oldSchema, newSchema);
+
             logger.info("Updating table {}.{}", dataBase, tableName);
-            hiveClient.alterTable(dataBase, tableName, newSchema);
+             hiveClient.alterTable(dataBase, tableName, newSchema);
         }
     }
 
@@ -69,5 +74,19 @@ public abstract class HiveUtil {
         String[] key_split = path.split("/");
 
         return serverPath + "/" +  key_split[0] + "/" + key_split[1] + "/";
+    }
+
+    private static void getHiveColumnsComments(List<FieldSchema> oldFields, List<FieldSchema> newFields) {
+
+        for (FieldSchema newField : newFields) {
+            for (FieldSchema oldField : oldFields) {
+                if (newField.getName().equals(oldField.getName())) {
+                    newField.setComment(oldField.getComment());
+                    break;
+                } else {
+                    newField.unsetComment();
+                }
+            }
+        }
     }
 }
