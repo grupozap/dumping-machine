@@ -47,7 +47,7 @@ public abstract class HiveUtil {
                 getHiveColumnsComments(oldSchema, newSchema);
 
             logger.info("Updating table {}.{}", dataBase, tableName);
-             hiveClient.alterTable(dataBase, tableName, newSchema);
+            hiveClient.alterTable(dataBase, tableName, newSchema);
         }
     }
 
