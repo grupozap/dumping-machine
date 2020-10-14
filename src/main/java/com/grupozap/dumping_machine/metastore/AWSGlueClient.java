@@ -73,7 +73,7 @@ public class AWSGlueClient implements MetastoreClient<Column> {
         TableInput tableInput = new TableInput();
         tableInput.setName(tableName);
         tableInput.setStorageDescriptor(storageDescriptor);
-        tableInput.setTableType("EXTERNAL"); // ??
+        tableInput.setTableType("EXTERNAL_TABLE"); // ??
         tableInput.setParameters(tableParameters);
         tableInput.setPartitionKeys(partitions);
 
