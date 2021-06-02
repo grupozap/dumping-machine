@@ -1,4 +1,4 @@
-FROM gradle:jdk8 as builder
+FROM gradle:5.6-jdk8 as builder
 
 LABEL maintainer="rubensmabueno@hotmail.com,rafael.paixao@outlook.com"
 
