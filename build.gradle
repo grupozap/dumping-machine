@@ -8,6 +8,7 @@ buildscript {
         mavenCentral()
         maven { url 'http://packages.confluent.io/maven/'}
         maven { url 'http://conjars.org/repo/'}
+        maven { url 'https://public.nexus.pentaho.org/content/groups/omni/'}
     }
 }
 
@@ -20,6 +21,7 @@ allprojects {
         mavenCentral()
         maven { url "http://packages.confluent.io/maven/" }
         maven { url 'http://conjars.org/repo/'}
+        maven { url 'https://public.nexus.pentaho.org/content/groups/omni/'}
     }
 
     dependencies {
